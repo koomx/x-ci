@@ -818,51 +818,62 @@ jobs:
   std17-centos7-amd64:
     if: ${{ inputs.enable-std17-centos7-amd64 }}
     runs-on: ubuntu-latest
-    env:
-      ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE_20: true
-    container: ghcr.io/koomx/kumo-std17-centos7-amd64:latest
     steps:
       - uses: actions/checkout@v4
       - name: Dump environment
+        shell: bash
         run: |
-          echo "=== Environment Dump ==="
-          if [ -f /etc/os-release ]; then
-              . /etc/os-release
-              echo "OS: $NAME $VERSION ($(uname -m))"
-          elif [ "$(uname)" = "Darwin" ]; then
-              echo "OS: macOS $(sw_vers -productVersion 2>/dev/null || echo unknown) ($(uname -m))"
-          else
-              echo "OS: $(uname -a 2>/dev/null || echo unknown)"
-          fi
-          for tool in cmake ninja make git python3 curl tar gzip; do
-              if command -v $tool &>/dev/null; then
-                  echo "  $tool: $(command -v $tool)  ($($tool --version 2>&1 | head -1))"
-              else
-                  echo "  $tool: NOT FOUND"
-              fi
-          done
-          for cc in gcc g++ clang clang++ cc c++; do
-              if command -v $cc &>/dev/null; then
-                  echo "  $($cc --version 2>&1 | head -1)"
-                  break
-              fi
-          done
-          echo "=== End ==="
+          SCRIPT="$(mktemp)"
+          echo 'ZWNobyAiPT09IEVudmlyb25tZW50IER1bXAgPT09IgppZiBbIC1mIC9ldGMvb3MtcmVsZWFzZSBdOyB0aGVuIC4gL2V0Yy9vcy1yZWxlYXNlOyBlY2hvICJPUzogJE5BTUUgJFZFUlNJT04gKCQodW5hbWUgLW0pKSI7IGZpCmZvciB0b29sIGluIGNtYWtlIG5pbmphIG1ha2UgZ2l0IHB5dGhvbjMgY3VybCB0YXIgZ3ppcDsgZG8KICBpZiBjb21tYW5kIC12ICR0b29sID4vZGV2L251bGwgMj4mMTsgdGhlbiBlY2hvICIgICR0b29sOiAkKGNvbW1hbmQgLXYgJHRvb2wpIjsgZWxzZSBlY2hvICIgICR0b29sOiBOT1QgRk9VTkQiOyBmaQpkb25lCmVjaG8gIj09PSBFbmQgPT09Igo=' | base64 -d > "$SCRIPT"
+          docker run --rm \
+            -v "$SCRIPT:/tmp/xci-step.sh:ro" \
+            -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
+            -v "$RUNNER_TEMP:$RUNNER_TEMP" \
+            -v "$GITHUB_ENV:$GITHUB_ENV" \
+            -v "$GITHUB_PATH:$GITHUB_PATH" \
+            -e GITHUB_ENV -e GITHUB_PATH -e RUNNER_TEMP -e GITHUB_WORKSPACE -e GITHUB_JOB \
+            -e VCPKG_ROOT -e VCPKG_CMAKE -e VCPKG_DEFAULT_BINARY_CACHE -e VCPKG_FORCE_SYSTEM_BINARIES \
+            -e KMPKG_HOME -e KMPKG_CMAKE -e KMPKG_FORCE_SYSTEM_BINARIES \
+            -w "$GITHUB_WORKSPACE" \
+            ghcr.io/koomx/kumo-std17-centos7-amd64:latest \
+            sh /tmp/xci-step.sh
       - name: Install deps
+        shell: bash
+        env:
+          XCI_DEPS: ${{ inputs.deps-centos }}
         run: |
-          if [ -n "${{ inputs.deps-centos }}" ]; then
-            yum install -y ${{ inputs.deps-centos }}
-          fi
+          SCRIPT="$(mktemp)"
+          echo 'aWYgWyAtbiAiJFhDSV9ERVBTIiBdOyB0aGVuCiAgeXVtIGluc3RhbGwgLXkgJFhDSV9ERVBTCmZpCg==' | base64 -d > "$SCRIPT"
+          docker run --rm \
+            -v "$SCRIPT:/tmp/xci-step.sh:ro" \
+            -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
+            -v "$RUNNER_TEMP:$RUNNER_TEMP" \
+            -v "$GITHUB_ENV:$GITHUB_ENV" \
+            -v "$GITHUB_PATH:$GITHUB_PATH" \
+            -e GITHUB_ENV -e GITHUB_PATH -e RUNNER_TEMP -e GITHUB_WORKSPACE -e GITHUB_JOB \
+            -e VCPKG_ROOT -e VCPKG_CMAKE -e VCPKG_DEFAULT_BINARY_CACHE -e VCPKG_FORCE_SYSTEM_BINARIES \
+            -e KMPKG_HOME -e KMPKG_CMAKE -e KMPKG_FORCE_SYSTEM_BINARIES \
+            -e XCI_DEPS \
+            -w "$GITHUB_WORKSPACE" \
+            ghcr.io/koomx/kumo-std17-centos7-amd64:latest \
+            sh /tmp/xci-step.sh
       - name: Bootstrap vcpkg
+        shell: bash
         run: |
-          git clone --depth 1 --branch master https://github.com/microsoft/vcpkg.git /tmp/vcpkg
-          /tmp/vcpkg/bootstrap-vcpkg.sh -disableMetrics
-          echo "VCPKG_ROOT=/tmp/vcpkg" >> "$GITHUB_ENV"
-          echo "VCPKG_CMAKE=/tmp/vcpkg/scripts/buildsystems/vcpkg.cmake" >> "$GITHUB_ENV"
-          echo "VCPKG_FORCE_SYSTEM_BINARIES=1" >> "$GITHUB_ENV"
-          mkdir -p "$RUNNER_TEMP/vcpkg-binary-cache"
-          echo "VCPKG_DEFAULT_BINARY_CACHE=$RUNNER_TEMP/vcpkg-binary-cache" >> "$GITHUB_ENV"
+          SCRIPT="$(mktemp)"
+          echo 'Z2l0IGNsb25lIC0tZGVwdGggMSAtLWJyYW5jaCBtYXN0ZXIgaHR0cHM6Ly9naXRodWIuY29tL21pY3Jvc29mdC92Y3BrZy5naXQgL3RtcC92Y3BrZwovdG1wL3ZjcGtnL2Jvb3RzdHJhcC12Y3BrZy5zaCAtZGlzYWJsZU1ldHJpY3MKZWNobyAiVkNQS0dfUk9PVD0vdG1wL3ZjcGtnIiA+PiAiJEdJVEhVQl9FTlYiCmVjaG8gIlZDUEtHX0NNQUtFPS90bXAvdmNwa2cvc2NyaXB0cy9idWlsZHN5c3RlbXMvdmNwa2cuY21ha2UiID4+ICIkR0lUSFVCX0VOViIKZWNobyAiVkNQS0dfRk9SQ0VfU1lTVEVNX0JJTkFSSUVTPTEiID4+ICIkR0lUSFVCX0VOViIKbWtkaXIgLXAgIiRSVU5ORVJfVEVNUC92Y3BrZy1iaW5hcnktY2FjaGUiCmVjaG8gIlZDUEtHX0RFRkFVTFRfQklOQVJZX0NBQ0hFPSRSVU5ORVJfVEVNUC92Y3BrZy1iaW5hcnktY2FjaGUiID4+ICIkR0lUSFVCX0VOViIK' | base64 -d > "$SCRIPT"
+          docker run --rm \
+            -v "$SCRIPT:/tmp/xci-step.sh:ro" \
+            -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
+            -v "$RUNNER_TEMP:$RUNNER_TEMP" \
+            -v "$GITHUB_ENV:$GITHUB_ENV" \
+            -v "$GITHUB_PATH:$GITHUB_PATH" \
+            -e GITHUB_ENV -e GITHUB_PATH -e RUNNER_TEMP -e GITHUB_WORKSPACE -e GITHUB_JOB \
+            -e VCPKG_ROOT -e VCPKG_CMAKE -e VCPKG_DEFAULT_BINARY_CACHE -e VCPKG_FORCE_SYSTEM_BINARIES \
+            -e KMPKG_HOME -e KMPKG_CMAKE -e KMPKG_FORCE_SYSTEM_BINARIES \
+            -w "$GITHUB_WORKSPACE" \
+            ghcr.io/koomx/kumo-std17-centos7-amd64:latest \
+            sh /tmp/xci-step.sh
       - name: Cache vcpkg binaries
         uses: actions/cache@v4
         with:
@@ -871,18 +882,103 @@ jobs:
           restore-keys: |
             vcpkg-bin-std17-centos7-amd64-
       - name: Configure
-        run: ${{ inputs.config-command }}
+        shell: bash
+        env:
+          XCI_CMD: ${{ inputs.config-command }}
+        run: |
+          SCRIPT="$(mktemp)"
+          printf '%s\n' "$XCI_CMD" > "$SCRIPT"
+          docker run --rm \
+            -v "$SCRIPT:/tmp/xci-step.sh:ro" \
+            -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
+            -v "$RUNNER_TEMP:$RUNNER_TEMP" \
+            -v "$GITHUB_ENV:$GITHUB_ENV" \
+            -v "$GITHUB_PATH:$GITHUB_PATH" \
+            -e GITHUB_ENV -e GITHUB_PATH -e RUNNER_TEMP -e GITHUB_WORKSPACE -e GITHUB_JOB \
+            -e VCPKG_ROOT -e VCPKG_CMAKE -e VCPKG_DEFAULT_BINARY_CACHE -e VCPKG_FORCE_SYSTEM_BINARIES \
+            -e KMPKG_HOME -e KMPKG_CMAKE -e KMPKG_FORCE_SYSTEM_BINARIES \
+            -w "$GITHUB_WORKSPACE" \
+            ghcr.io/koomx/kumo-std17-centos7-amd64:latest \
+            sh /tmp/xci-step.sh
       - name: Build
-        run: ${{ inputs.build-command }}
+        shell: bash
+        env:
+          XCI_CMD: ${{ inputs.build-command }}
+        run: |
+          SCRIPT="$(mktemp)"
+          printf '%s\n' "$XCI_CMD" > "$SCRIPT"
+          docker run --rm \
+            -v "$SCRIPT:/tmp/xci-step.sh:ro" \
+            -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
+            -v "$RUNNER_TEMP:$RUNNER_TEMP" \
+            -v "$GITHUB_ENV:$GITHUB_ENV" \
+            -v "$GITHUB_PATH:$GITHUB_PATH" \
+            -e GITHUB_ENV -e GITHUB_PATH -e RUNNER_TEMP -e GITHUB_WORKSPACE -e GITHUB_JOB \
+            -e VCPKG_ROOT -e VCPKG_CMAKE -e VCPKG_DEFAULT_BINARY_CACHE -e VCPKG_FORCE_SYSTEM_BINARIES \
+            -e KMPKG_HOME -e KMPKG_CMAKE -e KMPKG_FORCE_SYSTEM_BINARIES \
+            -w "$GITHUB_WORKSPACE" \
+            ghcr.io/koomx/kumo-std17-centos7-amd64:latest \
+            sh /tmp/xci-step.sh
       - name: Test
         if: ${{ inputs.test-command != '' }}
-        run: ${{ inputs.test-command }}
+        shell: bash
+        env:
+          XCI_CMD: ${{ inputs.test-command }}
+        run: |
+          SCRIPT="$(mktemp)"
+          printf '%s\n' "$XCI_CMD" > "$SCRIPT"
+          docker run --rm \
+            -v "$SCRIPT:/tmp/xci-step.sh:ro" \
+            -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
+            -v "$RUNNER_TEMP:$RUNNER_TEMP" \
+            -v "$GITHUB_ENV:$GITHUB_ENV" \
+            -v "$GITHUB_PATH:$GITHUB_PATH" \
+            -e GITHUB_ENV -e GITHUB_PATH -e RUNNER_TEMP -e GITHUB_WORKSPACE -e GITHUB_JOB \
+            -e VCPKG_ROOT -e VCPKG_CMAKE -e VCPKG_DEFAULT_BINARY_CACHE -e VCPKG_FORCE_SYSTEM_BINARIES \
+            -e KMPKG_HOME -e KMPKG_CMAKE -e KMPKG_FORCE_SYSTEM_BINARIES \
+            -w "$GITHUB_WORKSPACE" \
+            ghcr.io/koomx/kumo-std17-centos7-amd64:latest \
+            sh /tmp/xci-step.sh
       - name: Benchmark
         if: ${{ inputs.benchmark-command != '' }}
-        run: ${{ inputs.benchmark-command }}
+        shell: bash
+        env:
+          XCI_CMD: ${{ inputs.benchmark-command }}
+        run: |
+          SCRIPT="$(mktemp)"
+          printf '%s\n' "$XCI_CMD" > "$SCRIPT"
+          docker run --rm \
+            -v "$SCRIPT:/tmp/xci-step.sh:ro" \
+            -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
+            -v "$RUNNER_TEMP:$RUNNER_TEMP" \
+            -v "$GITHUB_ENV:$GITHUB_ENV" \
+            -v "$GITHUB_PATH:$GITHUB_PATH" \
+            -e GITHUB_ENV -e GITHUB_PATH -e RUNNER_TEMP -e GITHUB_WORKSPACE -e GITHUB_JOB \
+            -e VCPKG_ROOT -e VCPKG_CMAKE -e VCPKG_DEFAULT_BINARY_CACHE -e VCPKG_FORCE_SYSTEM_BINARIES \
+            -e KMPKG_HOME -e KMPKG_CMAKE -e KMPKG_FORCE_SYSTEM_BINARIES \
+            -w "$GITHUB_WORKSPACE" \
+            ghcr.io/koomx/kumo-std17-centos7-amd64:latest \
+            sh /tmp/xci-step.sh
       - name: Plot
         if: ${{ inputs.plot-command != '' }}
-        run: ${{ inputs.plot-command }}
+        shell: bash
+        env:
+          XCI_CMD: ${{ inputs.plot-command }}
+        run: |
+          SCRIPT="$(mktemp)"
+          printf '%s\n' "$XCI_CMD" > "$SCRIPT"
+          docker run --rm \
+            -v "$SCRIPT:/tmp/xci-step.sh:ro" \
+            -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
+            -v "$RUNNER_TEMP:$RUNNER_TEMP" \
+            -v "$GITHUB_ENV:$GITHUB_ENV" \
+            -v "$GITHUB_PATH:$GITHUB_PATH" \
+            -e GITHUB_ENV -e GITHUB_PATH -e RUNNER_TEMP -e GITHUB_WORKSPACE -e GITHUB_JOB \
+            -e VCPKG_ROOT -e VCPKG_CMAKE -e VCPKG_DEFAULT_BINARY_CACHE -e VCPKG_FORCE_SYSTEM_BINARIES \
+            -e KMPKG_HOME -e KMPKG_CMAKE -e KMPKG_FORCE_SYSTEM_BINARIES \
+            -w "$GITHUB_WORKSPACE" \
+            ghcr.io/koomx/kumo-std17-centos7-amd64:latest \
+            sh /tmp/xci-step.sh
       - name: Upload benchmark results
         if: ${{ (inputs.benchmark-command != '' || inputs.plot-command != '') && !cancelled() }}
         uses: actions/upload-artifact@v4
@@ -952,17 +1048,24 @@ jobs:
           done
           echo "Failed to publish after retries"
           exit 1
-      - name: Gather vcpkg logs
+      - name: Gather logs
         if: failure()
+        shell: bash
         run: |
-          mkdir -p build/vcpkg-logs
-          if [ -d /tmp/vcpkg/buildtrees ]; then
-            find /tmp/vcpkg/buildtrees -name "*.log" | while IFS= read -r f; do
-              rel="${f#/tmp/vcpkg/}"
-              mkdir -p "build/vcpkg-logs/$(dirname "$rel")"
-              cp "$f" "build/vcpkg-logs/$rel"
-            done
-          fi
+          SCRIPT="$(mktemp)"
+          echo 'bWtkaXIgLXAgYnVpbGQvdmNwa2ctbG9ncwppZiBbIC1kIC90bXAvdmNwa2cvYnVpbGR0cmVlcyBdOyB0aGVuCiAgZmluZCAvdG1wL3ZjcGtnL2J1aWxkdHJlZXMgLW5hbWUgIioubG9nIiB8IHdoaWxlIElGUz0gcmVhZCAtciBmOyBkbwogICAgcmVsPSIke2YjL3RtcC92Y3BrZy99IgogICAgbWtkaXIgLXAgImJ1aWxkL3ZjcGtnLWxvZ3MvJChkaXJuYW1lICIkcmVsIikiCiAgICBjcCAiJGYiICJidWlsZC92Y3BrZy1sb2dzLyRyZWwiCiAgZG9uZQpmaQo=' | base64 -d > "$SCRIPT"
+          docker run --rm \
+            -v "$SCRIPT:/tmp/xci-step.sh:ro" \
+            -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
+            -v "$RUNNER_TEMP:$RUNNER_TEMP" \
+            -v "$GITHUB_ENV:$GITHUB_ENV" \
+            -v "$GITHUB_PATH:$GITHUB_PATH" \
+            -e GITHUB_ENV -e GITHUB_PATH -e RUNNER_TEMP -e GITHUB_WORKSPACE -e GITHUB_JOB \
+            -e VCPKG_ROOT -e VCPKG_CMAKE -e VCPKG_DEFAULT_BINARY_CACHE -e VCPKG_FORCE_SYSTEM_BINARIES \
+            -e KMPKG_HOME -e KMPKG_CMAKE -e KMPKG_FORCE_SYSTEM_BINARIES \
+            -w "$GITHUB_WORKSPACE" \
+            ghcr.io/koomx/kumo-std17-centos7-amd64:latest \
+            sh /tmp/xci-step.sh
       - name: Upload logs on failure
         if: failure()
         uses: actions/upload-artifact@v4
@@ -975,55 +1078,65 @@ jobs:
             build/vcpkg-logs/
           if-no-files-found: ignore
 
-
   std17-centos7-arm64:
     if: ${{ inputs.enable-std17-centos7-arm64 }}
     runs-on: ubuntu-24.04-arm
-    env:
-      ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE_20: true
-    container: ghcr.io/koomx/kumo-std17-centos7-arm64:latest
     steps:
       - uses: actions/checkout@v4
       - name: Dump environment
+        shell: bash
         run: |
-          echo "=== Environment Dump ==="
-          if [ -f /etc/os-release ]; then
-              . /etc/os-release
-              echo "OS: $NAME $VERSION ($(uname -m))"
-          elif [ "$(uname)" = "Darwin" ]; then
-              echo "OS: macOS $(sw_vers -productVersion 2>/dev/null || echo unknown) ($(uname -m))"
-          else
-              echo "OS: $(uname -a 2>/dev/null || echo unknown)"
-          fi
-          for tool in cmake ninja make git python3 curl tar gzip; do
-              if command -v $tool &>/dev/null; then
-                  echo "  $tool: $(command -v $tool)  ($($tool --version 2>&1 | head -1))"
-              else
-                  echo "  $tool: NOT FOUND"
-              fi
-          done
-          for cc in gcc g++ clang clang++ cc c++; do
-              if command -v $cc &>/dev/null; then
-                  echo "  $($cc --version 2>&1 | head -1)"
-                  break
-              fi
-          done
-          echo "=== End ==="
+          SCRIPT="$(mktemp)"
+          echo 'ZWNobyAiPT09IEVudmlyb25tZW50IER1bXAgPT09IgppZiBbIC1mIC9ldGMvb3MtcmVsZWFzZSBdOyB0aGVuIC4gL2V0Yy9vcy1yZWxlYXNlOyBlY2hvICJPUzogJE5BTUUgJFZFUlNJT04gKCQodW5hbWUgLW0pKSI7IGZpCmZvciB0b29sIGluIGNtYWtlIG5pbmphIG1ha2UgZ2l0IHB5dGhvbjMgY3VybCB0YXIgZ3ppcDsgZG8KICBpZiBjb21tYW5kIC12ICR0b29sID4vZGV2L251bGwgMj4mMTsgdGhlbiBlY2hvICIgICR0b29sOiAkKGNvbW1hbmQgLXYgJHRvb2wpIjsgZWxzZSBlY2hvICIgICR0b29sOiBOT1QgRk9VTkQiOyBmaQpkb25lCmVjaG8gIj09PSBFbmQgPT09Igo=' | base64 -d > "$SCRIPT"
+          docker run --rm \
+            -v "$SCRIPT:/tmp/xci-step.sh:ro" \
+            -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
+            -v "$RUNNER_TEMP:$RUNNER_TEMP" \
+            -v "$GITHUB_ENV:$GITHUB_ENV" \
+            -v "$GITHUB_PATH:$GITHUB_PATH" \
+            -e GITHUB_ENV -e GITHUB_PATH -e RUNNER_TEMP -e GITHUB_WORKSPACE -e GITHUB_JOB \
+            -e VCPKG_ROOT -e VCPKG_CMAKE -e VCPKG_DEFAULT_BINARY_CACHE -e VCPKG_FORCE_SYSTEM_BINARIES \
+            -e KMPKG_HOME -e KMPKG_CMAKE -e KMPKG_FORCE_SYSTEM_BINARIES \
+            -w "$GITHUB_WORKSPACE" \
+            ghcr.io/koomx/kumo-std17-centos7-arm64:latest \
+            sh /tmp/xci-step.sh
       - name: Install deps
+        shell: bash
+        env:
+          XCI_DEPS: ${{ inputs.deps-centos }}
         run: |
-          if [ -n "${{ inputs.deps-centos }}" ]; then
-            yum install -y ${{ inputs.deps-centos }}
-          fi
+          SCRIPT="$(mktemp)"
+          echo 'aWYgWyAtbiAiJFhDSV9ERVBTIiBdOyB0aGVuCiAgeXVtIGluc3RhbGwgLXkgJFhDSV9ERVBTCmZpCg==' | base64 -d > "$SCRIPT"
+          docker run --rm \
+            -v "$SCRIPT:/tmp/xci-step.sh:ro" \
+            -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
+            -v "$RUNNER_TEMP:$RUNNER_TEMP" \
+            -v "$GITHUB_ENV:$GITHUB_ENV" \
+            -v "$GITHUB_PATH:$GITHUB_PATH" \
+            -e GITHUB_ENV -e GITHUB_PATH -e RUNNER_TEMP -e GITHUB_WORKSPACE -e GITHUB_JOB \
+            -e VCPKG_ROOT -e VCPKG_CMAKE -e VCPKG_DEFAULT_BINARY_CACHE -e VCPKG_FORCE_SYSTEM_BINARIES \
+            -e KMPKG_HOME -e KMPKG_CMAKE -e KMPKG_FORCE_SYSTEM_BINARIES \
+            -e XCI_DEPS \
+            -w "$GITHUB_WORKSPACE" \
+            ghcr.io/koomx/kumo-std17-centos7-arm64:latest \
+            sh /tmp/xci-step.sh
       - name: Bootstrap vcpkg
+        shell: bash
         run: |
-          git clone --depth 1 --branch master https://github.com/microsoft/vcpkg.git /tmp/vcpkg
-          /tmp/vcpkg/bootstrap-vcpkg.sh -disableMetrics
-          echo "VCPKG_ROOT=/tmp/vcpkg" >> "$GITHUB_ENV"
-          echo "VCPKG_CMAKE=/tmp/vcpkg/scripts/buildsystems/vcpkg.cmake" >> "$GITHUB_ENV"
-          echo "VCPKG_FORCE_SYSTEM_BINARIES=1" >> "$GITHUB_ENV"
-          mkdir -p "$RUNNER_TEMP/vcpkg-binary-cache"
-          echo "VCPKG_DEFAULT_BINARY_CACHE=$RUNNER_TEMP/vcpkg-binary-cache" >> "$GITHUB_ENV"
+          SCRIPT="$(mktemp)"
+          echo 'Z2l0IGNsb25lIC0tZGVwdGggMSAtLWJyYW5jaCBtYXN0ZXIgaHR0cHM6Ly9naXRodWIuY29tL21pY3Jvc29mdC92Y3BrZy5naXQgL3RtcC92Y3BrZwovdG1wL3ZjcGtnL2Jvb3RzdHJhcC12Y3BrZy5zaCAtZGlzYWJsZU1ldHJpY3MKZWNobyAiVkNQS0dfUk9PVD0vdG1wL3ZjcGtnIiA+PiAiJEdJVEhVQl9FTlYiCmVjaG8gIlZDUEtHX0NNQUtFPS90bXAvdmNwa2cvc2NyaXB0cy9idWlsZHN5c3RlbXMvdmNwa2cuY21ha2UiID4+ICIkR0lUSFVCX0VOViIKZWNobyAiVkNQS0dfRk9SQ0VfU1lTVEVNX0JJTkFSSUVTPTEiID4+ICIkR0lUSFVCX0VOViIKbWtkaXIgLXAgIiRSVU5ORVJfVEVNUC92Y3BrZy1iaW5hcnktY2FjaGUiCmVjaG8gIlZDUEtHX0RFRkFVTFRfQklOQVJZX0NBQ0hFPSRSVU5ORVJfVEVNUC92Y3BrZy1iaW5hcnktY2FjaGUiID4+ICIkR0lUSFVCX0VOViIK' | base64 -d > "$SCRIPT"
+          docker run --rm \
+            -v "$SCRIPT:/tmp/xci-step.sh:ro" \
+            -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
+            -v "$RUNNER_TEMP:$RUNNER_TEMP" \
+            -v "$GITHUB_ENV:$GITHUB_ENV" \
+            -v "$GITHUB_PATH:$GITHUB_PATH" \
+            -e GITHUB_ENV -e GITHUB_PATH -e RUNNER_TEMP -e GITHUB_WORKSPACE -e GITHUB_JOB \
+            -e VCPKG_ROOT -e VCPKG_CMAKE -e VCPKG_DEFAULT_BINARY_CACHE -e VCPKG_FORCE_SYSTEM_BINARIES \
+            -e KMPKG_HOME -e KMPKG_CMAKE -e KMPKG_FORCE_SYSTEM_BINARIES \
+            -w "$GITHUB_WORKSPACE" \
+            ghcr.io/koomx/kumo-std17-centos7-arm64:latest \
+            sh /tmp/xci-step.sh
       - name: Cache vcpkg binaries
         uses: actions/cache@v4
         with:
@@ -1032,18 +1145,103 @@ jobs:
           restore-keys: |
             vcpkg-bin-std17-centos7-arm64-
       - name: Configure
-        run: ${{ inputs.config-command }}
+        shell: bash
+        env:
+          XCI_CMD: ${{ inputs.config-command }}
+        run: |
+          SCRIPT="$(mktemp)"
+          printf '%s\n' "$XCI_CMD" > "$SCRIPT"
+          docker run --rm \
+            -v "$SCRIPT:/tmp/xci-step.sh:ro" \
+            -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
+            -v "$RUNNER_TEMP:$RUNNER_TEMP" \
+            -v "$GITHUB_ENV:$GITHUB_ENV" \
+            -v "$GITHUB_PATH:$GITHUB_PATH" \
+            -e GITHUB_ENV -e GITHUB_PATH -e RUNNER_TEMP -e GITHUB_WORKSPACE -e GITHUB_JOB \
+            -e VCPKG_ROOT -e VCPKG_CMAKE -e VCPKG_DEFAULT_BINARY_CACHE -e VCPKG_FORCE_SYSTEM_BINARIES \
+            -e KMPKG_HOME -e KMPKG_CMAKE -e KMPKG_FORCE_SYSTEM_BINARIES \
+            -w "$GITHUB_WORKSPACE" \
+            ghcr.io/koomx/kumo-std17-centos7-arm64:latest \
+            sh /tmp/xci-step.sh
       - name: Build
-        run: ${{ inputs.build-command }}
+        shell: bash
+        env:
+          XCI_CMD: ${{ inputs.build-command }}
+        run: |
+          SCRIPT="$(mktemp)"
+          printf '%s\n' "$XCI_CMD" > "$SCRIPT"
+          docker run --rm \
+            -v "$SCRIPT:/tmp/xci-step.sh:ro" \
+            -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
+            -v "$RUNNER_TEMP:$RUNNER_TEMP" \
+            -v "$GITHUB_ENV:$GITHUB_ENV" \
+            -v "$GITHUB_PATH:$GITHUB_PATH" \
+            -e GITHUB_ENV -e GITHUB_PATH -e RUNNER_TEMP -e GITHUB_WORKSPACE -e GITHUB_JOB \
+            -e VCPKG_ROOT -e VCPKG_CMAKE -e VCPKG_DEFAULT_BINARY_CACHE -e VCPKG_FORCE_SYSTEM_BINARIES \
+            -e KMPKG_HOME -e KMPKG_CMAKE -e KMPKG_FORCE_SYSTEM_BINARIES \
+            -w "$GITHUB_WORKSPACE" \
+            ghcr.io/koomx/kumo-std17-centos7-arm64:latest \
+            sh /tmp/xci-step.sh
       - name: Test
         if: ${{ inputs.test-command != '' }}
-        run: ${{ inputs.test-command }}
+        shell: bash
+        env:
+          XCI_CMD: ${{ inputs.test-command }}
+        run: |
+          SCRIPT="$(mktemp)"
+          printf '%s\n' "$XCI_CMD" > "$SCRIPT"
+          docker run --rm \
+            -v "$SCRIPT:/tmp/xci-step.sh:ro" \
+            -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
+            -v "$RUNNER_TEMP:$RUNNER_TEMP" \
+            -v "$GITHUB_ENV:$GITHUB_ENV" \
+            -v "$GITHUB_PATH:$GITHUB_PATH" \
+            -e GITHUB_ENV -e GITHUB_PATH -e RUNNER_TEMP -e GITHUB_WORKSPACE -e GITHUB_JOB \
+            -e VCPKG_ROOT -e VCPKG_CMAKE -e VCPKG_DEFAULT_BINARY_CACHE -e VCPKG_FORCE_SYSTEM_BINARIES \
+            -e KMPKG_HOME -e KMPKG_CMAKE -e KMPKG_FORCE_SYSTEM_BINARIES \
+            -w "$GITHUB_WORKSPACE" \
+            ghcr.io/koomx/kumo-std17-centos7-arm64:latest \
+            sh /tmp/xci-step.sh
       - name: Benchmark
         if: ${{ inputs.benchmark-command != '' }}
-        run: ${{ inputs.benchmark-command }}
+        shell: bash
+        env:
+          XCI_CMD: ${{ inputs.benchmark-command }}
+        run: |
+          SCRIPT="$(mktemp)"
+          printf '%s\n' "$XCI_CMD" > "$SCRIPT"
+          docker run --rm \
+            -v "$SCRIPT:/tmp/xci-step.sh:ro" \
+            -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
+            -v "$RUNNER_TEMP:$RUNNER_TEMP" \
+            -v "$GITHUB_ENV:$GITHUB_ENV" \
+            -v "$GITHUB_PATH:$GITHUB_PATH" \
+            -e GITHUB_ENV -e GITHUB_PATH -e RUNNER_TEMP -e GITHUB_WORKSPACE -e GITHUB_JOB \
+            -e VCPKG_ROOT -e VCPKG_CMAKE -e VCPKG_DEFAULT_BINARY_CACHE -e VCPKG_FORCE_SYSTEM_BINARIES \
+            -e KMPKG_HOME -e KMPKG_CMAKE -e KMPKG_FORCE_SYSTEM_BINARIES \
+            -w "$GITHUB_WORKSPACE" \
+            ghcr.io/koomx/kumo-std17-centos7-arm64:latest \
+            sh /tmp/xci-step.sh
       - name: Plot
         if: ${{ inputs.plot-command != '' }}
-        run: ${{ inputs.plot-command }}
+        shell: bash
+        env:
+          XCI_CMD: ${{ inputs.plot-command }}
+        run: |
+          SCRIPT="$(mktemp)"
+          printf '%s\n' "$XCI_CMD" > "$SCRIPT"
+          docker run --rm \
+            -v "$SCRIPT:/tmp/xci-step.sh:ro" \
+            -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
+            -v "$RUNNER_TEMP:$RUNNER_TEMP" \
+            -v "$GITHUB_ENV:$GITHUB_ENV" \
+            -v "$GITHUB_PATH:$GITHUB_PATH" \
+            -e GITHUB_ENV -e GITHUB_PATH -e RUNNER_TEMP -e GITHUB_WORKSPACE -e GITHUB_JOB \
+            -e VCPKG_ROOT -e VCPKG_CMAKE -e VCPKG_DEFAULT_BINARY_CACHE -e VCPKG_FORCE_SYSTEM_BINARIES \
+            -e KMPKG_HOME -e KMPKG_CMAKE -e KMPKG_FORCE_SYSTEM_BINARIES \
+            -w "$GITHUB_WORKSPACE" \
+            ghcr.io/koomx/kumo-std17-centos7-arm64:latest \
+            sh /tmp/xci-step.sh
       - name: Upload benchmark results
         if: ${{ (inputs.benchmark-command != '' || inputs.plot-command != '') && !cancelled() }}
         uses: actions/upload-artifact@v4
@@ -1113,17 +1311,24 @@ jobs:
           done
           echo "Failed to publish after retries"
           exit 1
-      - name: Gather vcpkg logs
+      - name: Gather logs
         if: failure()
+        shell: bash
         run: |
-          mkdir -p build/vcpkg-logs
-          if [ -d /tmp/vcpkg/buildtrees ]; then
-            find /tmp/vcpkg/buildtrees -name "*.log" | while IFS= read -r f; do
-              rel="${f#/tmp/vcpkg/}"
-              mkdir -p "build/vcpkg-logs/$(dirname "$rel")"
-              cp "$f" "build/vcpkg-logs/$rel"
-            done
-          fi
+          SCRIPT="$(mktemp)"
+          echo 'bWtkaXIgLXAgYnVpbGQvdmNwa2ctbG9ncwppZiBbIC1kIC90bXAvdmNwa2cvYnVpbGR0cmVlcyBdOyB0aGVuCiAgZmluZCAvdG1wL3ZjcGtnL2J1aWxkdHJlZXMgLW5hbWUgIioubG9nIiB8IHdoaWxlIElGUz0gcmVhZCAtciBmOyBkbwogICAgcmVsPSIke2YjL3RtcC92Y3BrZy99IgogICAgbWtkaXIgLXAgImJ1aWxkL3ZjcGtnLWxvZ3MvJChkaXJuYW1lICIkcmVsIikiCiAgICBjcCAiJGYiICJidWlsZC92Y3BrZy1sb2dzLyRyZWwiCiAgZG9uZQpmaQo=' | base64 -d > "$SCRIPT"
+          docker run --rm \
+            -v "$SCRIPT:/tmp/xci-step.sh:ro" \
+            -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
+            -v "$RUNNER_TEMP:$RUNNER_TEMP" \
+            -v "$GITHUB_ENV:$GITHUB_ENV" \
+            -v "$GITHUB_PATH:$GITHUB_PATH" \
+            -e GITHUB_ENV -e GITHUB_PATH -e RUNNER_TEMP -e GITHUB_WORKSPACE -e GITHUB_JOB \
+            -e VCPKG_ROOT -e VCPKG_CMAKE -e VCPKG_DEFAULT_BINARY_CACHE -e VCPKG_FORCE_SYSTEM_BINARIES \
+            -e KMPKG_HOME -e KMPKG_CMAKE -e KMPKG_FORCE_SYSTEM_BINARIES \
+            -w "$GITHUB_WORKSPACE" \
+            ghcr.io/koomx/kumo-std17-centos7-arm64:latest \
+            sh /tmp/xci-step.sh
       - name: Upload logs on failure
         if: failure()
         uses: actions/upload-artifact@v4
@@ -1135,7 +1340,6 @@ jobs:
             build/Testing/Temporary/
             build/vcpkg-logs/
           if-no-files-found: ignore
-
 
   std20-ubuntu22-amd64:
     if: ${{ inputs.enable-std20-ubuntu22-amd64 }}
@@ -2259,7 +2463,6 @@ jobs:
         run: |
           SCRIPT="$(mktemp)"
           echo 'ZWNobyAiPT09IEVudmlyb25tZW50IER1bXAgPT09IgppZiBbIC1mIC9ldGMvb3MtcmVsZWFzZSBdOyB0aGVuIC4gL2V0Yy9vcy1yZWxlYXNlOyBlY2hvICJPUzogJE5BTUUgJFZFUlNJT04gKCQodW5hbWUgLW0pKSI7IGZpCmZvciB0b29sIGluIGNtYWtlIG5pbmphIG1ha2UgZ2l0IHB5dGhvbjMgY3VybCB0YXIgZ3ppcDsgZG8KICBpZiBjb21tYW5kIC12ICR0b29sID4vZGV2L251bGwgMj4mMTsgdGhlbiBlY2hvICIgICR0b29sOiAkKGNvbW1hbmQgLXYgJHRvb2wpIjsgZWxzZSBlY2hvICIgICR0b29sOiBOT1QgRk9VTkQiOyBmaQpkb25lCmVjaG8gIj09PSBFbmQgPT09Igo=' | base64 -d > "$SCRIPT"
-          chmod +x "$SCRIPT"
           docker run --rm \
             -v "$SCRIPT:/tmp/xci-step.sh:ro" \
             -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
@@ -2274,10 +2477,11 @@ jobs:
             sh /tmp/xci-step.sh
       - name: Install deps
         shell: bash
+        env:
+          XCI_DEPS: ${{ inputs.deps-alpine }}
         run: |
           SCRIPT="$(mktemp)"
-          echo 'aWYgWyAtbiAiJHt7IGlucHV0cy5kZXBzLWFscGluZSB9fSIgXTsgdGhlbgogIGFwayBhZGQgLS1uby1jYWNoZSAke3sgaW5wdXRzLmRlcHMtYWxwaW5lIH19CmZpCg==' | base64 -d > "$SCRIPT"
-          chmod +x "$SCRIPT"
+          echo 'aWYgWyAtbiAiJFhDSV9ERVBTIiBdOyB0aGVuCiAgYXBrIGFkZCAtLW5vLWNhY2hlICRYQ0lfREVQUwpmaQo=' | base64 -d > "$SCRIPT"
           docker run --rm \
             -v "$SCRIPT:/tmp/xci-step.sh:ro" \
             -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
@@ -2287,6 +2491,7 @@ jobs:
             -e GITHUB_ENV -e GITHUB_PATH -e RUNNER_TEMP -e GITHUB_WORKSPACE -e GITHUB_JOB \
             -e VCPKG_ROOT -e VCPKG_CMAKE -e VCPKG_DEFAULT_BINARY_CACHE -e VCPKG_FORCE_SYSTEM_BINARIES \
             -e KMPKG_HOME -e KMPKG_CMAKE -e KMPKG_FORCE_SYSTEM_BINARIES \
+            -e XCI_DEPS \
             -w "$GITHUB_WORKSPACE" \
             ghcr.io/koomx/kumo-std20-alpine319-arm64:latest \
             sh /tmp/xci-step.sh
@@ -2295,7 +2500,6 @@ jobs:
         run: |
           SCRIPT="$(mktemp)"
           echo 'Z2l0IGNsb25lIC0tZGVwdGggMSAtLWJyYW5jaCBtYXN0ZXIgaHR0cHM6Ly9naXRodWIuY29tL21pY3Jvc29mdC92Y3BrZy5naXQgL3RtcC92Y3BrZwovdG1wL3ZjcGtnL2Jvb3RzdHJhcC12Y3BrZy5zaCAtZGlzYWJsZU1ldHJpY3MKZWNobyAiVkNQS0dfUk9PVD0vdG1wL3ZjcGtnIiA+PiAiJEdJVEhVQl9FTlYiCmVjaG8gIlZDUEtHX0NNQUtFPS90bXAvdmNwa2cvc2NyaXB0cy9idWlsZHN5c3RlbXMvdmNwa2cuY21ha2UiID4+ICIkR0lUSFVCX0VOViIKZWNobyAiVkNQS0dfRk9SQ0VfU1lTVEVNX0JJTkFSSUVTPTEiID4+ICIkR0lUSFVCX0VOViIKbWtkaXIgLXAgIiRSVU5ORVJfVEVNUC92Y3BrZy1iaW5hcnktY2FjaGUiCmVjaG8gIlZDUEtHX0RFRkFVTFRfQklOQVJZX0NBQ0hFPSRSVU5ORVJfVEVNUC92Y3BrZy1iaW5hcnktY2FjaGUiID4+ICIkR0lUSFVCX0VOViIK' | base64 -d > "$SCRIPT"
-          chmod +x "$SCRIPT"
           docker run --rm \
             -v "$SCRIPT:/tmp/xci-step.sh:ro" \
             -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
@@ -2317,10 +2521,11 @@ jobs:
             vcpkg-bin-std20-alpine319-arm64-
       - name: Configure
         shell: bash
+        env:
+          XCI_CMD: ${{ inputs.config-command }}
         run: |
           SCRIPT="$(mktemp)"
-          echo 'JHt7IGlucHV0cy5jb25maWctY29tbWFuZCB9fQo=' | base64 -d > "$SCRIPT"
-          chmod +x "$SCRIPT"
+          printf '%s\n' "$XCI_CMD" > "$SCRIPT"
           docker run --rm \
             -v "$SCRIPT:/tmp/xci-step.sh:ro" \
             -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
@@ -2335,10 +2540,11 @@ jobs:
             sh /tmp/xci-step.sh
       - name: Build
         shell: bash
+        env:
+          XCI_CMD: ${{ inputs.build-command }}
         run: |
           SCRIPT="$(mktemp)"
-          echo 'JHt7IGlucHV0cy5idWlsZC1jb21tYW5kIH19Cg==' | base64 -d > "$SCRIPT"
-          chmod +x "$SCRIPT"
+          printf '%s\n' "$XCI_CMD" > "$SCRIPT"
           docker run --rm \
             -v "$SCRIPT:/tmp/xci-step.sh:ro" \
             -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
@@ -2354,10 +2560,11 @@ jobs:
       - name: Test
         if: ${{ inputs.test-command != '' }}
         shell: bash
+        env:
+          XCI_CMD: ${{ inputs.test-command }}
         run: |
           SCRIPT="$(mktemp)"
-          echo 'JHt7IGlucHV0cy50ZXN0LWNvbW1hbmQgfX0K' | base64 -d > "$SCRIPT"
-          chmod +x "$SCRIPT"
+          printf '%s\n' "$XCI_CMD" > "$SCRIPT"
           docker run --rm \
             -v "$SCRIPT:/tmp/xci-step.sh:ro" \
             -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
@@ -2373,10 +2580,11 @@ jobs:
       - name: Benchmark
         if: ${{ inputs.benchmark-command != '' }}
         shell: bash
+        env:
+          XCI_CMD: ${{ inputs.benchmark-command }}
         run: |
           SCRIPT="$(mktemp)"
-          echo 'JHt7IGlucHV0cy5iZW5jaG1hcmstY29tbWFuZCB9fQo=' | base64 -d > "$SCRIPT"
-          chmod +x "$SCRIPT"
+          printf '%s\n' "$XCI_CMD" > "$SCRIPT"
           docker run --rm \
             -v "$SCRIPT:/tmp/xci-step.sh:ro" \
             -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
@@ -2392,10 +2600,11 @@ jobs:
       - name: Plot
         if: ${{ inputs.plot-command != '' }}
         shell: bash
+        env:
+          XCI_CMD: ${{ inputs.plot-command }}
         run: |
           SCRIPT="$(mktemp)"
-          echo 'JHt7IGlucHV0cy5wbG90LWNvbW1hbmQgfX0K' | base64 -d > "$SCRIPT"
-          chmod +x "$SCRIPT"
+          printf '%s\n' "$XCI_CMD" > "$SCRIPT"
           docker run --rm \
             -v "$SCRIPT:/tmp/xci-step.sh:ro" \
             -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
@@ -2483,7 +2692,6 @@ jobs:
         run: |
           SCRIPT="$(mktemp)"
           echo 'bWtkaXIgLXAgYnVpbGQvdmNwa2ctbG9ncwppZiBbIC1kIC90bXAvdmNwa2cvYnVpbGR0cmVlcyBdOyB0aGVuCiAgZmluZCAvdG1wL3ZjcGtnL2J1aWxkdHJlZXMgLW5hbWUgIioubG9nIiB8IHdoaWxlIElGUz0gcmVhZCAtciBmOyBkbwogICAgcmVsPSIke2YjL3RtcC92Y3BrZy99IgogICAgbWtkaXIgLXAgImJ1aWxkL3ZjcGtnLWxvZ3MvJChkaXJuYW1lICIkcmVsIikiCiAgICBjcCAiJGYiICJidWlsZC92Y3BrZy1sb2dzLyRyZWwiCiAgZG9uZQpmaQo=' | base64 -d > "$SCRIPT"
-          chmod +x "$SCRIPT"
           docker run --rm \
             -v "$SCRIPT:/tmp/xci-step.sh:ro" \
             -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
@@ -2676,7 +2884,6 @@ jobs:
         run: |
           SCRIPT="$(mktemp)"
           echo 'ZWNobyAiPT09IEVudmlyb25tZW50IER1bXAgPT09IgppZiBbIC1mIC9ldGMvb3MtcmVsZWFzZSBdOyB0aGVuIC4gL2V0Yy9vcy1yZWxlYXNlOyBlY2hvICJPUzogJE5BTUUgJFZFUlNJT04gKCQodW5hbWUgLW0pKSI7IGZpCmZvciB0b29sIGluIGNtYWtlIG5pbmphIG1ha2UgZ2l0IHB5dGhvbjMgY3VybCB0YXIgZ3ppcDsgZG8KICBpZiBjb21tYW5kIC12ICR0b29sID4vZGV2L251bGwgMj4mMTsgdGhlbiBlY2hvICIgICR0b29sOiAkKGNvbW1hbmQgLXYgJHRvb2wpIjsgZWxzZSBlY2hvICIgICR0b29sOiBOT1QgRk9VTkQiOyBmaQpkb25lCmVjaG8gIj09PSBFbmQgPT09Igo=' | base64 -d > "$SCRIPT"
-          chmod +x "$SCRIPT"
           docker run --rm \
             -v "$SCRIPT:/tmp/xci-step.sh:ro" \
             -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
@@ -2691,10 +2898,11 @@ jobs:
             sh /tmp/xci-step.sh
       - name: Install deps
         shell: bash
+        env:
+          XCI_DEPS: ${{ inputs.deps-alpine }}
         run: |
           SCRIPT="$(mktemp)"
-          echo 'aWYgWyAtbiAiJHt7IGlucHV0cy5kZXBzLWFscGluZSB9fSIgXTsgdGhlbgogIGFwayBhZGQgLS1uby1jYWNoZSAke3sgaW5wdXRzLmRlcHMtYWxwaW5lIH19CmZpCg==' | base64 -d > "$SCRIPT"
-          chmod +x "$SCRIPT"
+          echo 'aWYgWyAtbiAiJFhDSV9ERVBTIiBdOyB0aGVuCiAgYXBrIGFkZCAtLW5vLWNhY2hlICRYQ0lfREVQUwpmaQo=' | base64 -d > "$SCRIPT"
           docker run --rm \
             -v "$SCRIPT:/tmp/xci-step.sh:ro" \
             -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
@@ -2704,6 +2912,7 @@ jobs:
             -e GITHUB_ENV -e GITHUB_PATH -e RUNNER_TEMP -e GITHUB_WORKSPACE -e GITHUB_JOB \
             -e VCPKG_ROOT -e VCPKG_CMAKE -e VCPKG_DEFAULT_BINARY_CACHE -e VCPKG_FORCE_SYSTEM_BINARIES \
             -e KMPKG_HOME -e KMPKG_CMAKE -e KMPKG_FORCE_SYSTEM_BINARIES \
+            -e XCI_DEPS \
             -w "$GITHUB_WORKSPACE" \
             ghcr.io/koomx/kumo-std20-alpine320-arm64:latest \
             sh /tmp/xci-step.sh
@@ -2712,7 +2921,6 @@ jobs:
         run: |
           SCRIPT="$(mktemp)"
           echo 'Z2l0IGNsb25lIC0tZGVwdGggMSAtLWJyYW5jaCBtYXN0ZXIgaHR0cHM6Ly9naXRodWIuY29tL21pY3Jvc29mdC92Y3BrZy5naXQgL3RtcC92Y3BrZwovdG1wL3ZjcGtnL2Jvb3RzdHJhcC12Y3BrZy5zaCAtZGlzYWJsZU1ldHJpY3MKZWNobyAiVkNQS0dfUk9PVD0vdG1wL3ZjcGtnIiA+PiAiJEdJVEhVQl9FTlYiCmVjaG8gIlZDUEtHX0NNQUtFPS90bXAvdmNwa2cvc2NyaXB0cy9idWlsZHN5c3RlbXMvdmNwa2cuY21ha2UiID4+ICIkR0lUSFVCX0VOViIKZWNobyAiVkNQS0dfRk9SQ0VfU1lTVEVNX0JJTkFSSUVTPTEiID4+ICIkR0lUSFVCX0VOViIKbWtkaXIgLXAgIiRSVU5ORVJfVEVNUC92Y3BrZy1iaW5hcnktY2FjaGUiCmVjaG8gIlZDUEtHX0RFRkFVTFRfQklOQVJZX0NBQ0hFPSRSVU5ORVJfVEVNUC92Y3BrZy1iaW5hcnktY2FjaGUiID4+ICIkR0lUSFVCX0VOViIK' | base64 -d > "$SCRIPT"
-          chmod +x "$SCRIPT"
           docker run --rm \
             -v "$SCRIPT:/tmp/xci-step.sh:ro" \
             -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
@@ -2734,10 +2942,11 @@ jobs:
             vcpkg-bin-std20-alpine320-arm64-
       - name: Configure
         shell: bash
+        env:
+          XCI_CMD: ${{ inputs.config-command }}
         run: |
           SCRIPT="$(mktemp)"
-          echo 'JHt7IGlucHV0cy5jb25maWctY29tbWFuZCB9fQo=' | base64 -d > "$SCRIPT"
-          chmod +x "$SCRIPT"
+          printf '%s\n' "$XCI_CMD" > "$SCRIPT"
           docker run --rm \
             -v "$SCRIPT:/tmp/xci-step.sh:ro" \
             -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
@@ -2752,10 +2961,11 @@ jobs:
             sh /tmp/xci-step.sh
       - name: Build
         shell: bash
+        env:
+          XCI_CMD: ${{ inputs.build-command }}
         run: |
           SCRIPT="$(mktemp)"
-          echo 'JHt7IGlucHV0cy5idWlsZC1jb21tYW5kIH19Cg==' | base64 -d > "$SCRIPT"
-          chmod +x "$SCRIPT"
+          printf '%s\n' "$XCI_CMD" > "$SCRIPT"
           docker run --rm \
             -v "$SCRIPT:/tmp/xci-step.sh:ro" \
             -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
@@ -2771,10 +2981,11 @@ jobs:
       - name: Test
         if: ${{ inputs.test-command != '' }}
         shell: bash
+        env:
+          XCI_CMD: ${{ inputs.test-command }}
         run: |
           SCRIPT="$(mktemp)"
-          echo 'JHt7IGlucHV0cy50ZXN0LWNvbW1hbmQgfX0K' | base64 -d > "$SCRIPT"
-          chmod +x "$SCRIPT"
+          printf '%s\n' "$XCI_CMD" > "$SCRIPT"
           docker run --rm \
             -v "$SCRIPT:/tmp/xci-step.sh:ro" \
             -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
@@ -2790,10 +3001,11 @@ jobs:
       - name: Benchmark
         if: ${{ inputs.benchmark-command != '' }}
         shell: bash
+        env:
+          XCI_CMD: ${{ inputs.benchmark-command }}
         run: |
           SCRIPT="$(mktemp)"
-          echo 'JHt7IGlucHV0cy5iZW5jaG1hcmstY29tbWFuZCB9fQo=' | base64 -d > "$SCRIPT"
-          chmod +x "$SCRIPT"
+          printf '%s\n' "$XCI_CMD" > "$SCRIPT"
           docker run --rm \
             -v "$SCRIPT:/tmp/xci-step.sh:ro" \
             -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
@@ -2809,10 +3021,11 @@ jobs:
       - name: Plot
         if: ${{ inputs.plot-command != '' }}
         shell: bash
+        env:
+          XCI_CMD: ${{ inputs.plot-command }}
         run: |
           SCRIPT="$(mktemp)"
-          echo 'JHt7IGlucHV0cy5wbG90LWNvbW1hbmQgfX0K' | base64 -d > "$SCRIPT"
-          chmod +x "$SCRIPT"
+          printf '%s\n' "$XCI_CMD" > "$SCRIPT"
           docker run --rm \
             -v "$SCRIPT:/tmp/xci-step.sh:ro" \
             -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
@@ -2900,7 +3113,6 @@ jobs:
         run: |
           SCRIPT="$(mktemp)"
           echo 'bWtkaXIgLXAgYnVpbGQvdmNwa2ctbG9ncwppZiBbIC1kIC90bXAvdmNwa2cvYnVpbGR0cmVlcyBdOyB0aGVuCiAgZmluZCAvdG1wL3ZjcGtnL2J1aWxkdHJlZXMgLW5hbWUgIioubG9nIiB8IHdoaWxlIElGUz0gcmVhZCAtciBmOyBkbwogICAgcmVsPSIke2YjL3RtcC92Y3BrZy99IgogICAgbWtkaXIgLXAgImJ1aWxkL3ZjcGtnLWxvZ3MvJChkaXJuYW1lICIkcmVsIikiCiAgICBjcCAiJGYiICJidWlsZC92Y3BrZy1sb2dzLyRyZWwiCiAgZG9uZQpmaQo=' | base64 -d > "$SCRIPT"
-          chmod +x "$SCRIPT"
           docker run --rm \
             -v "$SCRIPT:/tmp/xci-step.sh:ro" \
             -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
