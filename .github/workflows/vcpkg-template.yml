@@ -2192,7 +2192,11 @@ jobs:
       - name: Dump environment
         shell: bash
         run: |
+          SCRIPT="$(mktemp)"
+          echo 'ZWNobyAiPT09IEVudmlyb25tZW50IER1bXAgPT09IgppZiBbIC1mIC9ldGMvb3MtcmVsZWFzZSBdOyB0aGVuIC4gL2V0Yy9vcy1yZWxlYXNlOyBlY2hvICJPUzogJE5BTUUgJFZFUlNJT04gKCQodW5hbWUgLW0pKSI7IGZpCmZvciB0b29sIGluIGNtYWtlIG5pbmphIG1ha2UgZ2l0IHB5dGhvbjMgY3VybCB0YXIgZ3ppcDsgZG8KICBpZiBjb21tYW5kIC12ICR0b29sID4vZGV2L251bGwgMj4mMTsgdGhlbiBlY2hvICIgICR0b29sOiAkKGNvbW1hbmQgLXYgJHRvb2wpIjsgZWxzZSBlY2hvICIgICR0b29sOiBOT1QgRk9VTkQiOyBmaQpkb25lCmVjaG8gIj09PSBFbmQgPT09Igo=' | base64 -d > "$SCRIPT"
+          chmod +x "$SCRIPT"
           docker run --rm \
+            -v "$SCRIPT:/tmp/xci-step.sh:ro" \
             -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
             -v "$RUNNER_TEMP:$RUNNER_TEMP" \
             -v "$GITHUB_ENV:$GITHUB_ENV" \
@@ -2202,19 +2206,15 @@ jobs:
             -e KMPKG_HOME -e KMPKG_CMAKE -e KMPKG_FORCE_SYSTEM_BINARIES \
             -w "$GITHUB_WORKSPACE" \
             ghcr.io/koomx/kumo-std20-alpine319-arm64:latest \
-            sh -lc "$(cat <<'EOS'
-echo "=== Environment Dump ==="
-if [ -f /etc/os-release ]; then . /etc/os-release; echo "OS: $NAME $VERSION ($(uname -m))"; fi
-for tool in cmake ninja make git python3 curl tar gzip; do
-  if command -v $tool >/dev/null 2>&1; then echo "  $tool: $(command -v $tool)"; else echo "  $tool: NOT FOUND"; fi
-done
-echo "=== End ==="
-EOS
-)"
+            sh /tmp/xci-step.sh
       - name: Install deps
         shell: bash
         run: |
+          SCRIPT="$(mktemp)"
+          echo 'aWYgWyAtbiAiJHt7IGlucHV0cy5kZXBzLWFscGluZSB9fSIgXTsgdGhlbgogIGFwayBhZGQgLS1uby1jYWNoZSAke3sgaW5wdXRzLmRlcHMtYWxwaW5lIH19CmZpCg==' | base64 -d > "$SCRIPT"
+          chmod +x "$SCRIPT"
           docker run --rm \
+            -v "$SCRIPT:/tmp/xci-step.sh:ro" \
             -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
             -v "$RUNNER_TEMP:$RUNNER_TEMP" \
             -v "$GITHUB_ENV:$GITHUB_ENV" \
@@ -2224,16 +2224,15 @@ EOS
             -e KMPKG_HOME -e KMPKG_CMAKE -e KMPKG_FORCE_SYSTEM_BINARIES \
             -w "$GITHUB_WORKSPACE" \
             ghcr.io/koomx/kumo-std20-alpine319-arm64:latest \
-            sh -lc "$(cat <<'EOS'
-if [ -n "${{ inputs.deps-alpine }}" ]; then
-  apk add --no-cache ${{ inputs.deps-alpine }}
-fi
-EOS
-)"
+            sh /tmp/xci-step.sh
       - name: Bootstrap vcpkg
         shell: bash
         run: |
+          SCRIPT="$(mktemp)"
+          echo 'Z2l0IGNsb25lIC0tZGVwdGggMSAtLWJyYW5jaCBtYXN0ZXIgaHR0cHM6Ly9naXRodWIuY29tL21pY3Jvc29mdC92Y3BrZy5naXQgL3RtcC92Y3BrZwovdG1wL3ZjcGtnL2Jvb3RzdHJhcC12Y3BrZy5zaCAtZGlzYWJsZU1ldHJpY3MKZWNobyAiVkNQS0dfUk9PVD0vdG1wL3ZjcGtnIiA+PiAiJEdJVEhVQl9FTlYiCmVjaG8gIlZDUEtHX0NNQUtFPS90bXAvdmNwa2cvc2NyaXB0cy9idWlsZHN5c3RlbXMvdmNwa2cuY21ha2UiID4+ICIkR0lUSFVCX0VOViIKZWNobyAiVkNQS0dfRk9SQ0VfU1lTVEVNX0JJTkFSSUVTPTEiID4+ICIkR0lUSFVCX0VOViIKbWtkaXIgLXAgIiRSVU5ORVJfVEVNUC92Y3BrZy1iaW5hcnktY2FjaGUiCmVjaG8gIlZDUEtHX0RFRkFVTFRfQklOQVJZX0NBQ0hFPSRSVU5ORVJfVEVNUC92Y3BrZy1iaW5hcnktY2FjaGUiID4+ICIkR0lUSFVCX0VOViIK' | base64 -d > "$SCRIPT"
+          chmod +x "$SCRIPT"
           docker run --rm \
+            -v "$SCRIPT:/tmp/xci-step.sh:ro" \
             -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
             -v "$RUNNER_TEMP:$RUNNER_TEMP" \
             -v "$GITHUB_ENV:$GITHUB_ENV" \
@@ -2243,16 +2242,7 @@ EOS
             -e KMPKG_HOME -e KMPKG_CMAKE -e KMPKG_FORCE_SYSTEM_BINARIES \
             -w "$GITHUB_WORKSPACE" \
             ghcr.io/koomx/kumo-std20-alpine319-arm64:latest \
-            sh -lc "$(cat <<'EOS'
-git clone --depth 1 --branch master https://github.com/microsoft/vcpkg.git /tmp/vcpkg
-/tmp/vcpkg/bootstrap-vcpkg.sh -disableMetrics
-echo "VCPKG_ROOT=/tmp/vcpkg" >> "$GITHUB_ENV"
-echo "VCPKG_CMAKE=/tmp/vcpkg/scripts/buildsystems/vcpkg.cmake" >> "$GITHUB_ENV"
-echo "VCPKG_FORCE_SYSTEM_BINARIES=1" >> "$GITHUB_ENV"
-mkdir -p "$RUNNER_TEMP/vcpkg-binary-cache"
-echo "VCPKG_DEFAULT_BINARY_CACHE=$RUNNER_TEMP/vcpkg-binary-cache" >> "$GITHUB_ENV"
-EOS
-)"
+            sh /tmp/xci-step.sh
       - name: Cache vcpkg binaries
         uses: actions/cache@v4
         with:
@@ -2263,7 +2253,11 @@ EOS
       - name: Configure
         shell: bash
         run: |
+          SCRIPT="$(mktemp)"
+          echo 'JHt7IGlucHV0cy5jb25maWctY29tbWFuZCB9fQo=' | base64 -d > "$SCRIPT"
+          chmod +x "$SCRIPT"
           docker run --rm \
+            -v "$SCRIPT:/tmp/xci-step.sh:ro" \
             -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
             -v "$RUNNER_TEMP:$RUNNER_TEMP" \
             -v "$GITHUB_ENV:$GITHUB_ENV" \
@@ -2273,14 +2267,15 @@ EOS
             -e KMPKG_HOME -e KMPKG_CMAKE -e KMPKG_FORCE_SYSTEM_BINARIES \
             -w "$GITHUB_WORKSPACE" \
             ghcr.io/koomx/kumo-std20-alpine319-arm64:latest \
-            sh -lc "$(cat <<'EOS'
-${{ inputs.config-command }}
-EOS
-)"
+            sh /tmp/xci-step.sh
       - name: Build
         shell: bash
         run: |
+          SCRIPT="$(mktemp)"
+          echo 'JHt7IGlucHV0cy5idWlsZC1jb21tYW5kIH19Cg==' | base64 -d > "$SCRIPT"
+          chmod +x "$SCRIPT"
           docker run --rm \
+            -v "$SCRIPT:/tmp/xci-step.sh:ro" \
             -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
             -v "$RUNNER_TEMP:$RUNNER_TEMP" \
             -v "$GITHUB_ENV:$GITHUB_ENV" \
@@ -2290,15 +2285,16 @@ EOS
             -e KMPKG_HOME -e KMPKG_CMAKE -e KMPKG_FORCE_SYSTEM_BINARIES \
             -w "$GITHUB_WORKSPACE" \
             ghcr.io/koomx/kumo-std20-alpine319-arm64:latest \
-            sh -lc "$(cat <<'EOS'
-${{ inputs.build-command }}
-EOS
-)"
+            sh /tmp/xci-step.sh
       - name: Test
         if: ${{ inputs.test-command != '' }}
         shell: bash
         run: |
+          SCRIPT="$(mktemp)"
+          echo 'JHt7IGlucHV0cy50ZXN0LWNvbW1hbmQgfX0K' | base64 -d > "$SCRIPT"
+          chmod +x "$SCRIPT"
           docker run --rm \
+            -v "$SCRIPT:/tmp/xci-step.sh:ro" \
             -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
             -v "$RUNNER_TEMP:$RUNNER_TEMP" \
             -v "$GITHUB_ENV:$GITHUB_ENV" \
@@ -2308,15 +2304,16 @@ EOS
             -e KMPKG_HOME -e KMPKG_CMAKE -e KMPKG_FORCE_SYSTEM_BINARIES \
             -w "$GITHUB_WORKSPACE" \
             ghcr.io/koomx/kumo-std20-alpine319-arm64:latest \
-            sh -lc "$(cat <<'EOS'
-${{ inputs.test-command }}
-EOS
-)"
+            sh /tmp/xci-step.sh
       - name: Benchmark
         if: ${{ inputs.benchmark-command != '' }}
         shell: bash
         run: |
+          SCRIPT="$(mktemp)"
+          echo 'JHt7IGlucHV0cy5iZW5jaG1hcmstY29tbWFuZCB9fQo=' | base64 -d > "$SCRIPT"
+          chmod +x "$SCRIPT"
           docker run --rm \
+            -v "$SCRIPT:/tmp/xci-step.sh:ro" \
             -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
             -v "$RUNNER_TEMP:$RUNNER_TEMP" \
             -v "$GITHUB_ENV:$GITHUB_ENV" \
@@ -2326,15 +2323,16 @@ EOS
             -e KMPKG_HOME -e KMPKG_CMAKE -e KMPKG_FORCE_SYSTEM_BINARIES \
             -w "$GITHUB_WORKSPACE" \
             ghcr.io/koomx/kumo-std20-alpine319-arm64:latest \
-            sh -lc "$(cat <<'EOS'
-${{ inputs.benchmark-command }}
-EOS
-)"
+            sh /tmp/xci-step.sh
       - name: Plot
         if: ${{ inputs.plot-command != '' }}
         shell: bash
         run: |
+          SCRIPT="$(mktemp)"
+          echo 'JHt7IGlucHV0cy5wbG90LWNvbW1hbmQgfX0K' | base64 -d > "$SCRIPT"
+          chmod +x "$SCRIPT"
           docker run --rm \
+            -v "$SCRIPT:/tmp/xci-step.sh:ro" \
             -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
             -v "$RUNNER_TEMP:$RUNNER_TEMP" \
             -v "$GITHUB_ENV:$GITHUB_ENV" \
@@ -2344,10 +2342,7 @@ EOS
             -e KMPKG_HOME -e KMPKG_CMAKE -e KMPKG_FORCE_SYSTEM_BINARIES \
             -w "$GITHUB_WORKSPACE" \
             ghcr.io/koomx/kumo-std20-alpine319-arm64:latest \
-            sh -lc "$(cat <<'EOS'
-${{ inputs.plot-command }}
-EOS
-)"
+            sh /tmp/xci-step.sh
       - name: Upload benchmark results
         if: ${{ (inputs.benchmark-command != '' || inputs.plot-command != '') && !cancelled() }}
         uses: actions/upload-artifact@v4
@@ -2416,7 +2411,11 @@ EOS
         if: failure()
         shell: bash
         run: |
+          SCRIPT="$(mktemp)"
+          echo 'bWtkaXIgLXAgYnVpbGQvdmNwa2ctbG9ncwppZiBbIC1kIC90bXAvdmNwa2cvYnVpbGR0cmVlcyBdOyB0aGVuCiAgZmluZCAvdG1wL3ZjcGtnL2J1aWxkdHJlZXMgLW5hbWUgIioubG9nIiB8IHdoaWxlIElGUz0gcmVhZCAtciBmOyBkbwogICAgcmVsPSIke2YjL3RtcC92Y3BrZy99IgogICAgbWtkaXIgLXAgImJ1aWxkL3ZjcGtnLWxvZ3MvJChkaXJuYW1lICIkcmVsIikiCiAgICBjcCAiJGYiICJidWlsZC92Y3BrZy1sb2dzLyRyZWwiCiAgZG9uZQpmaQo=' | base64 -d > "$SCRIPT"
+          chmod +x "$SCRIPT"
           docker run --rm \
+            -v "$SCRIPT:/tmp/xci-step.sh:ro" \
             -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
             -v "$RUNNER_TEMP:$RUNNER_TEMP" \
             -v "$GITHUB_ENV:$GITHUB_ENV" \
@@ -2426,17 +2425,7 @@ EOS
             -e KMPKG_HOME -e KMPKG_CMAKE -e KMPKG_FORCE_SYSTEM_BINARIES \
             -w "$GITHUB_WORKSPACE" \
             ghcr.io/koomx/kumo-std20-alpine319-arm64:latest \
-            sh -lc "$(cat <<'EOS'
-mkdir -p build/vcpkg-logs
-if [ -d /tmp/vcpkg/buildtrees ]; then
-  find /tmp/vcpkg/buildtrees -name "*.log" | while IFS= read -r f; do
-    rel="${f#/tmp/vcpkg/}"
-    mkdir -p "build/vcpkg-logs/$(dirname "$rel")"
-    cp "$f" "build/vcpkg-logs/$rel"
-  done
-fi
-EOS
-)"
+            sh /tmp/xci-step.sh
       - name: Upload logs on failure
         if: failure()
         uses: actions/upload-artifact@v4
@@ -2610,7 +2599,11 @@ EOS
       - name: Dump environment
         shell: bash
         run: |
+          SCRIPT="$(mktemp)"
+          echo 'ZWNobyAiPT09IEVudmlyb25tZW50IER1bXAgPT09IgppZiBbIC1mIC9ldGMvb3MtcmVsZWFzZSBdOyB0aGVuIC4gL2V0Yy9vcy1yZWxlYXNlOyBlY2hvICJPUzogJE5BTUUgJFZFUlNJT04gKCQodW5hbWUgLW0pKSI7IGZpCmZvciB0b29sIGluIGNtYWtlIG5pbmphIG1ha2UgZ2l0IHB5dGhvbjMgY3VybCB0YXIgZ3ppcDsgZG8KICBpZiBjb21tYW5kIC12ICR0b29sID4vZGV2L251bGwgMj4mMTsgdGhlbiBlY2hvICIgICR0b29sOiAkKGNvbW1hbmQgLXYgJHRvb2wpIjsgZWxzZSBlY2hvICIgICR0b29sOiBOT1QgRk9VTkQiOyBmaQpkb25lCmVjaG8gIj09PSBFbmQgPT09Igo=' | base64 -d > "$SCRIPT"
+          chmod +x "$SCRIPT"
           docker run --rm \
+            -v "$SCRIPT:/tmp/xci-step.sh:ro" \
             -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
             -v "$RUNNER_TEMP:$RUNNER_TEMP" \
             -v "$GITHUB_ENV:$GITHUB_ENV" \
@@ -2620,19 +2613,15 @@ EOS
             -e KMPKG_HOME -e KMPKG_CMAKE -e KMPKG_FORCE_SYSTEM_BINARIES \
             -w "$GITHUB_WORKSPACE" \
             ghcr.io/koomx/kumo-std20-alpine320-arm64:latest \
-            sh -lc "$(cat <<'EOS'
-echo "=== Environment Dump ==="
-if [ -f /etc/os-release ]; then . /etc/os-release; echo "OS: $NAME $VERSION ($(uname -m))"; fi
-for tool in cmake ninja make git python3 curl tar gzip; do
-  if command -v $tool >/dev/null 2>&1; then echo "  $tool: $(command -v $tool)"; else echo "  $tool: NOT FOUND"; fi
-done
-echo "=== End ==="
-EOS
-)"
+            sh /tmp/xci-step.sh
       - name: Install deps
         shell: bash
         run: |
+          SCRIPT="$(mktemp)"
+          echo 'aWYgWyAtbiAiJHt7IGlucHV0cy5kZXBzLWFscGluZSB9fSIgXTsgdGhlbgogIGFwayBhZGQgLS1uby1jYWNoZSAke3sgaW5wdXRzLmRlcHMtYWxwaW5lIH19CmZpCg==' | base64 -d > "$SCRIPT"
+          chmod +x "$SCRIPT"
           docker run --rm \
+            -v "$SCRIPT:/tmp/xci-step.sh:ro" \
             -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
             -v "$RUNNER_TEMP:$RUNNER_TEMP" \
             -v "$GITHUB_ENV:$GITHUB_ENV" \
@@ -2642,16 +2631,15 @@ EOS
             -e KMPKG_HOME -e KMPKG_CMAKE -e KMPKG_FORCE_SYSTEM_BINARIES \
             -w "$GITHUB_WORKSPACE" \
             ghcr.io/koomx/kumo-std20-alpine320-arm64:latest \
-            sh -lc "$(cat <<'EOS'
-if [ -n "${{ inputs.deps-alpine }}" ]; then
-  apk add --no-cache ${{ inputs.deps-alpine }}
-fi
-EOS
-)"
+            sh /tmp/xci-step.sh
       - name: Bootstrap vcpkg
         shell: bash
         run: |
+          SCRIPT="$(mktemp)"
+          echo 'Z2l0IGNsb25lIC0tZGVwdGggMSAtLWJyYW5jaCBtYXN0ZXIgaHR0cHM6Ly9naXRodWIuY29tL21pY3Jvc29mdC92Y3BrZy5naXQgL3RtcC92Y3BrZwovdG1wL3ZjcGtnL2Jvb3RzdHJhcC12Y3BrZy5zaCAtZGlzYWJsZU1ldHJpY3MKZWNobyAiVkNQS0dfUk9PVD0vdG1wL3ZjcGtnIiA+PiAiJEdJVEhVQl9FTlYiCmVjaG8gIlZDUEtHX0NNQUtFPS90bXAvdmNwa2cvc2NyaXB0cy9idWlsZHN5c3RlbXMvdmNwa2cuY21ha2UiID4+ICIkR0lUSFVCX0VOViIKZWNobyAiVkNQS0dfRk9SQ0VfU1lTVEVNX0JJTkFSSUVTPTEiID4+ICIkR0lUSFVCX0VOViIKbWtkaXIgLXAgIiRSVU5ORVJfVEVNUC92Y3BrZy1iaW5hcnktY2FjaGUiCmVjaG8gIlZDUEtHX0RFRkFVTFRfQklOQVJZX0NBQ0hFPSRSVU5ORVJfVEVNUC92Y3BrZy1iaW5hcnktY2FjaGUiID4+ICIkR0lUSFVCX0VOViIK' | base64 -d > "$SCRIPT"
+          chmod +x "$SCRIPT"
           docker run --rm \
+            -v "$SCRIPT:/tmp/xci-step.sh:ro" \
             -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
             -v "$RUNNER_TEMP:$RUNNER_TEMP" \
             -v "$GITHUB_ENV:$GITHUB_ENV" \
@@ -2661,16 +2649,7 @@ EOS
             -e KMPKG_HOME -e KMPKG_CMAKE -e KMPKG_FORCE_SYSTEM_BINARIES \
             -w "$GITHUB_WORKSPACE" \
             ghcr.io/koomx/kumo-std20-alpine320-arm64:latest \
-            sh -lc "$(cat <<'EOS'
-git clone --depth 1 --branch master https://github.com/microsoft/vcpkg.git /tmp/vcpkg
-/tmp/vcpkg/bootstrap-vcpkg.sh -disableMetrics
-echo "VCPKG_ROOT=/tmp/vcpkg" >> "$GITHUB_ENV"
-echo "VCPKG_CMAKE=/tmp/vcpkg/scripts/buildsystems/vcpkg.cmake" >> "$GITHUB_ENV"
-echo "VCPKG_FORCE_SYSTEM_BINARIES=1" >> "$GITHUB_ENV"
-mkdir -p "$RUNNER_TEMP/vcpkg-binary-cache"
-echo "VCPKG_DEFAULT_BINARY_CACHE=$RUNNER_TEMP/vcpkg-binary-cache" >> "$GITHUB_ENV"
-EOS
-)"
+            sh /tmp/xci-step.sh
       - name: Cache vcpkg binaries
         uses: actions/cache@v4
         with:
@@ -2681,7 +2660,11 @@ EOS
       - name: Configure
         shell: bash
         run: |
+          SCRIPT="$(mktemp)"
+          echo 'JHt7IGlucHV0cy5jb25maWctY29tbWFuZCB9fQo=' | base64 -d > "$SCRIPT"
+          chmod +x "$SCRIPT"
           docker run --rm \
+            -v "$SCRIPT:/tmp/xci-step.sh:ro" \
             -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
             -v "$RUNNER_TEMP:$RUNNER_TEMP" \
             -v "$GITHUB_ENV:$GITHUB_ENV" \
@@ -2691,14 +2674,15 @@ EOS
             -e KMPKG_HOME -e KMPKG_CMAKE -e KMPKG_FORCE_SYSTEM_BINARIES \
             -w "$GITHUB_WORKSPACE" \
             ghcr.io/koomx/kumo-std20-alpine320-arm64:latest \
-            sh -lc "$(cat <<'EOS'
-${{ inputs.config-command }}
-EOS
-)"
+            sh /tmp/xci-step.sh
       - name: Build
         shell: bash
         run: |
+          SCRIPT="$(mktemp)"
+          echo 'JHt7IGlucHV0cy5idWlsZC1jb21tYW5kIH19Cg==' | base64 -d > "$SCRIPT"
+          chmod +x "$SCRIPT"
           docker run --rm \
+            -v "$SCRIPT:/tmp/xci-step.sh:ro" \
             -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
             -v "$RUNNER_TEMP:$RUNNER_TEMP" \
             -v "$GITHUB_ENV:$GITHUB_ENV" \
@@ -2708,15 +2692,16 @@ EOS
             -e KMPKG_HOME -e KMPKG_CMAKE -e KMPKG_FORCE_SYSTEM_BINARIES \
             -w "$GITHUB_WORKSPACE" \
             ghcr.io/koomx/kumo-std20-alpine320-arm64:latest \
-            sh -lc "$(cat <<'EOS'
-${{ inputs.build-command }}
-EOS
-)"
+            sh /tmp/xci-step.sh
       - name: Test
         if: ${{ inputs.test-command != '' }}
         shell: bash
         run: |
+          SCRIPT="$(mktemp)"
+          echo 'JHt7IGlucHV0cy50ZXN0LWNvbW1hbmQgfX0K' | base64 -d > "$SCRIPT"
+          chmod +x "$SCRIPT"
           docker run --rm \
+            -v "$SCRIPT:/tmp/xci-step.sh:ro" \
             -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
             -v "$RUNNER_TEMP:$RUNNER_TEMP" \
             -v "$GITHUB_ENV:$GITHUB_ENV" \
@@ -2726,15 +2711,16 @@ EOS
             -e KMPKG_HOME -e KMPKG_CMAKE -e KMPKG_FORCE_SYSTEM_BINARIES \
             -w "$GITHUB_WORKSPACE" \
             ghcr.io/koomx/kumo-std20-alpine320-arm64:latest \
-            sh -lc "$(cat <<'EOS'
-${{ inputs.test-command }}
-EOS
-)"
+            sh /tmp/xci-step.sh
       - name: Benchmark
         if: ${{ inputs.benchmark-command != '' }}
         shell: bash
         run: |
+          SCRIPT="$(mktemp)"
+          echo 'JHt7IGlucHV0cy5iZW5jaG1hcmstY29tbWFuZCB9fQo=' | base64 -d > "$SCRIPT"
+          chmod +x "$SCRIPT"
           docker run --rm \
+            -v "$SCRIPT:/tmp/xci-step.sh:ro" \
             -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
             -v "$RUNNER_TEMP:$RUNNER_TEMP" \
             -v "$GITHUB_ENV:$GITHUB_ENV" \
@@ -2744,15 +2730,16 @@ EOS
             -e KMPKG_HOME -e KMPKG_CMAKE -e KMPKG_FORCE_SYSTEM_BINARIES \
             -w "$GITHUB_WORKSPACE" \
             ghcr.io/koomx/kumo-std20-alpine320-arm64:latest \
-            sh -lc "$(cat <<'EOS'
-${{ inputs.benchmark-command }}
-EOS
-)"
+            sh /tmp/xci-step.sh
       - name: Plot
         if: ${{ inputs.plot-command != '' }}
         shell: bash
         run: |
+          SCRIPT="$(mktemp)"
+          echo 'JHt7IGlucHV0cy5wbG90LWNvbW1hbmQgfX0K' | base64 -d > "$SCRIPT"
+          chmod +x "$SCRIPT"
           docker run --rm \
+            -v "$SCRIPT:/tmp/xci-step.sh:ro" \
             -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
             -v "$RUNNER_TEMP:$RUNNER_TEMP" \
             -v "$GITHUB_ENV:$GITHUB_ENV" \
@@ -2762,10 +2749,7 @@ EOS
             -e KMPKG_HOME -e KMPKG_CMAKE -e KMPKG_FORCE_SYSTEM_BINARIES \
             -w "$GITHUB_WORKSPACE" \
             ghcr.io/koomx/kumo-std20-alpine320-arm64:latest \
-            sh -lc "$(cat <<'EOS'
-${{ inputs.plot-command }}
-EOS
-)"
+            sh /tmp/xci-step.sh
       - name: Upload benchmark results
         if: ${{ (inputs.benchmark-command != '' || inputs.plot-command != '') && !cancelled() }}
         uses: actions/upload-artifact@v4
@@ -2834,7 +2818,11 @@ EOS
         if: failure()
         shell: bash
         run: |
+          SCRIPT="$(mktemp)"
+          echo 'bWtkaXIgLXAgYnVpbGQvdmNwa2ctbG9ncwppZiBbIC1kIC90bXAvdmNwa2cvYnVpbGR0cmVlcyBdOyB0aGVuCiAgZmluZCAvdG1wL3ZjcGtnL2J1aWxkdHJlZXMgLW5hbWUgIioubG9nIiB8IHdoaWxlIElGUz0gcmVhZCAtciBmOyBkbwogICAgcmVsPSIke2YjL3RtcC92Y3BrZy99IgogICAgbWtkaXIgLXAgImJ1aWxkL3ZjcGtnLWxvZ3MvJChkaXJuYW1lICIkcmVsIikiCiAgICBjcCAiJGYiICJidWlsZC92Y3BrZy1sb2dzLyRyZWwiCiAgZG9uZQpmaQo=' | base64 -d > "$SCRIPT"
+          chmod +x "$SCRIPT"
           docker run --rm \
+            -v "$SCRIPT:/tmp/xci-step.sh:ro" \
             -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
             -v "$RUNNER_TEMP:$RUNNER_TEMP" \
             -v "$GITHUB_ENV:$GITHUB_ENV" \
@@ -2844,17 +2832,7 @@ EOS
             -e KMPKG_HOME -e KMPKG_CMAKE -e KMPKG_FORCE_SYSTEM_BINARIES \
             -w "$GITHUB_WORKSPACE" \
             ghcr.io/koomx/kumo-std20-alpine320-arm64:latest \
-            sh -lc "$(cat <<'EOS'
-mkdir -p build/vcpkg-logs
-if [ -d /tmp/vcpkg/buildtrees ]; then
-  find /tmp/vcpkg/buildtrees -name "*.log" | while IFS= read -r f; do
-    rel="${f#/tmp/vcpkg/}"
-    mkdir -p "build/vcpkg-logs/$(dirname "$rel")"
-    cp "$f" "build/vcpkg-logs/$rel"
-  done
-fi
-EOS
-)"
+            sh /tmp/xci-step.sh
       - name: Upload logs on failure
         if: failure()
         uses: actions/upload-artifact@v4
