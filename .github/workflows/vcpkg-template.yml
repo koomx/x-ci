@@ -267,43 +267,48 @@ jobs:
             exit 0
           fi
           JOB_ID="${GITHUB_JOB}"
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          ROOT="$GITHUB_WORKSPACE"
+          cd "$ROOT"
+          git config --global --add safe.directory "$ROOT"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           WORK="$RUNNER_TEMP/bench-publish-$JOB_ID"
+          cleanup_worktree() {
+            cd "$ROOT"
+            git worktree remove --force "$WORK" 2>/dev/null || true
+            rm -rf "$WORK"
+          }
           attempt=1
           while [ "$attempt" -le 12 ]; do
             echo "Publish attempt $attempt for $JOB_ID"
-            rm -rf "$WORK"
+            cleanup_worktree
             mkdir -p "$WORK"
             if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
               git worktree add --force "$WORK" "FETCH_HEAD"
             else
               git worktree add --force --detach "$WORK"
-              (
-                cd "$WORK"
-                git checkout --orphan "$PUBLISH_BRANCH"
-                git rm -rf . >/dev/null 2>&1 || true
-              )
+              git -C "$WORK" checkout --orphan "$PUBLISH_BRANCH"
+              git -C "$WORK" rm -rf . >/dev/null 2>&1 || true
             fi
             mkdir -p "$WORK/latest"
             rm -rf "$WORK/latest/$JOB_ID"
             mkdir -p "$WORK/latest/$JOB_ID"
             cp -a "$SRC_DIR"/. "$WORK/latest/$JOB_ID/"
-            cd "$WORK"
-            git add -A
-            if git diff --cached --quiet; then
+            git -C "$WORK" add -A
+            if git -C "$WORK" diff --cached --quiet; then
               echo "No benchmark publish changes for $JOB_ID"
+              cleanup_worktree
               exit 0
             fi
-            git commit -m "chore: update benchmark results for ${JOB_ID}"
-            if git push origin "HEAD:$PUBLISH_BRANCH"; then
+            git -C "$WORK" commit -m "chore: update benchmark results for ${JOB_ID}"
+            if git -C "$WORK" push origin "HEAD:$PUBLISH_BRANCH"; then
               echo "Published $JOB_ID to $PUBLISH_BRANCH/latest/$JOB_ID"
+              cleanup_worktree
               exit 0
             fi
             echo "Push conflict; retrying..."
-            git worktree remove --force "$WORK" 2>/dev/null || rm -rf "$WORK"
+            cleanup_worktree
             attempt=$((attempt + 1))
             sleep $((attempt * 2))
           done
@@ -421,43 +426,48 @@ jobs:
             exit 0
           fi
           JOB_ID="${GITHUB_JOB}"
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          ROOT="$GITHUB_WORKSPACE"
+          cd "$ROOT"
+          git config --global --add safe.directory "$ROOT"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           WORK="$RUNNER_TEMP/bench-publish-$JOB_ID"
+          cleanup_worktree() {
+            cd "$ROOT"
+            git worktree remove --force "$WORK" 2>/dev/null || true
+            rm -rf "$WORK"
+          }
           attempt=1
           while [ "$attempt" -le 12 ]; do
             echo "Publish attempt $attempt for $JOB_ID"
-            rm -rf "$WORK"
+            cleanup_worktree
             mkdir -p "$WORK"
             if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
               git worktree add --force "$WORK" "FETCH_HEAD"
             else
               git worktree add --force --detach "$WORK"
-              (
-                cd "$WORK"
-                git checkout --orphan "$PUBLISH_BRANCH"
-                git rm -rf . >/dev/null 2>&1 || true
-              )
+              git -C "$WORK" checkout --orphan "$PUBLISH_BRANCH"
+              git -C "$WORK" rm -rf . >/dev/null 2>&1 || true
             fi
             mkdir -p "$WORK/latest"
             rm -rf "$WORK/latest/$JOB_ID"
             mkdir -p "$WORK/latest/$JOB_ID"
             cp -a "$SRC_DIR"/. "$WORK/latest/$JOB_ID/"
-            cd "$WORK"
-            git add -A
-            if git diff --cached --quiet; then
+            git -C "$WORK" add -A
+            if git -C "$WORK" diff --cached --quiet; then
               echo "No benchmark publish changes for $JOB_ID"
+              cleanup_worktree
               exit 0
             fi
-            git commit -m "chore: update benchmark results for ${JOB_ID}"
-            if git push origin "HEAD:$PUBLISH_BRANCH"; then
+            git -C "$WORK" commit -m "chore: update benchmark results for ${JOB_ID}"
+            if git -C "$WORK" push origin "HEAD:$PUBLISH_BRANCH"; then
               echo "Published $JOB_ID to $PUBLISH_BRANCH/latest/$JOB_ID"
+              cleanup_worktree
               exit 0
             fi
             echo "Push conflict; retrying..."
-            git worktree remove --force "$WORK" 2>/dev/null || rm -rf "$WORK"
+            cleanup_worktree
             attempt=$((attempt + 1))
             sleep $((attempt * 2))
           done
@@ -575,43 +585,48 @@ jobs:
             exit 0
           fi
           JOB_ID="${GITHUB_JOB}"
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          ROOT="$GITHUB_WORKSPACE"
+          cd "$ROOT"
+          git config --global --add safe.directory "$ROOT"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           WORK="$RUNNER_TEMP/bench-publish-$JOB_ID"
+          cleanup_worktree() {
+            cd "$ROOT"
+            git worktree remove --force "$WORK" 2>/dev/null || true
+            rm -rf "$WORK"
+          }
           attempt=1
           while [ "$attempt" -le 12 ]; do
             echo "Publish attempt $attempt for $JOB_ID"
-            rm -rf "$WORK"
+            cleanup_worktree
             mkdir -p "$WORK"
             if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
               git worktree add --force "$WORK" "FETCH_HEAD"
             else
               git worktree add --force --detach "$WORK"
-              (
-                cd "$WORK"
-                git checkout --orphan "$PUBLISH_BRANCH"
-                git rm -rf . >/dev/null 2>&1 || true
-              )
+              git -C "$WORK" checkout --orphan "$PUBLISH_BRANCH"
+              git -C "$WORK" rm -rf . >/dev/null 2>&1 || true
             fi
             mkdir -p "$WORK/latest"
             rm -rf "$WORK/latest/$JOB_ID"
             mkdir -p "$WORK/latest/$JOB_ID"
             cp -a "$SRC_DIR"/. "$WORK/latest/$JOB_ID/"
-            cd "$WORK"
-            git add -A
-            if git diff --cached --quiet; then
+            git -C "$WORK" add -A
+            if git -C "$WORK" diff --cached --quiet; then
               echo "No benchmark publish changes for $JOB_ID"
+              cleanup_worktree
               exit 0
             fi
-            git commit -m "chore: update benchmark results for ${JOB_ID}"
-            if git push origin "HEAD:$PUBLISH_BRANCH"; then
+            git -C "$WORK" commit -m "chore: update benchmark results for ${JOB_ID}"
+            if git -C "$WORK" push origin "HEAD:$PUBLISH_BRANCH"; then
               echo "Published $JOB_ID to $PUBLISH_BRANCH/latest/$JOB_ID"
+              cleanup_worktree
               exit 0
             fi
             echo "Push conflict; retrying..."
-            git worktree remove --force "$WORK" 2>/dev/null || rm -rf "$WORK"
+            cleanup_worktree
             attempt=$((attempt + 1))
             sleep $((attempt * 2))
           done
@@ -729,43 +744,48 @@ jobs:
             exit 0
           fi
           JOB_ID="${GITHUB_JOB}"
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          ROOT="$GITHUB_WORKSPACE"
+          cd "$ROOT"
+          git config --global --add safe.directory "$ROOT"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           WORK="$RUNNER_TEMP/bench-publish-$JOB_ID"
+          cleanup_worktree() {
+            cd "$ROOT"
+            git worktree remove --force "$WORK" 2>/dev/null || true
+            rm -rf "$WORK"
+          }
           attempt=1
           while [ "$attempt" -le 12 ]; do
             echo "Publish attempt $attempt for $JOB_ID"
-            rm -rf "$WORK"
+            cleanup_worktree
             mkdir -p "$WORK"
             if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
               git worktree add --force "$WORK" "FETCH_HEAD"
             else
               git worktree add --force --detach "$WORK"
-              (
-                cd "$WORK"
-                git checkout --orphan "$PUBLISH_BRANCH"
-                git rm -rf . >/dev/null 2>&1 || true
-              )
+              git -C "$WORK" checkout --orphan "$PUBLISH_BRANCH"
+              git -C "$WORK" rm -rf . >/dev/null 2>&1 || true
             fi
             mkdir -p "$WORK/latest"
             rm -rf "$WORK/latest/$JOB_ID"
             mkdir -p "$WORK/latest/$JOB_ID"
             cp -a "$SRC_DIR"/. "$WORK/latest/$JOB_ID/"
-            cd "$WORK"
-            git add -A
-            if git diff --cached --quiet; then
+            git -C "$WORK" add -A
+            if git -C "$WORK" diff --cached --quiet; then
               echo "No benchmark publish changes for $JOB_ID"
+              cleanup_worktree
               exit 0
             fi
-            git commit -m "chore: update benchmark results for ${JOB_ID}"
-            if git push origin "HEAD:$PUBLISH_BRANCH"; then
+            git -C "$WORK" commit -m "chore: update benchmark results for ${JOB_ID}"
+            if git -C "$WORK" push origin "HEAD:$PUBLISH_BRANCH"; then
               echo "Published $JOB_ID to $PUBLISH_BRANCH/latest/$JOB_ID"
+              cleanup_worktree
               exit 0
             fi
             echo "Push conflict; retrying..."
-            git worktree remove --force "$WORK" 2>/dev/null || rm -rf "$WORK"
+            cleanup_worktree
             attempt=$((attempt + 1))
             sleep $((attempt * 2))
           done
@@ -885,43 +905,48 @@ jobs:
             exit 0
           fi
           JOB_ID="${GITHUB_JOB}"
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          ROOT="$GITHUB_WORKSPACE"
+          cd "$ROOT"
+          git config --global --add safe.directory "$ROOT"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           WORK="$RUNNER_TEMP/bench-publish-$JOB_ID"
+          cleanup_worktree() {
+            cd "$ROOT"
+            git worktree remove --force "$WORK" 2>/dev/null || true
+            rm -rf "$WORK"
+          }
           attempt=1
           while [ "$attempt" -le 12 ]; do
             echo "Publish attempt $attempt for $JOB_ID"
-            rm -rf "$WORK"
+            cleanup_worktree
             mkdir -p "$WORK"
             if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
               git worktree add --force "$WORK" "FETCH_HEAD"
             else
               git worktree add --force --detach "$WORK"
-              (
-                cd "$WORK"
-                git checkout --orphan "$PUBLISH_BRANCH"
-                git rm -rf . >/dev/null 2>&1 || true
-              )
+              git -C "$WORK" checkout --orphan "$PUBLISH_BRANCH"
+              git -C "$WORK" rm -rf . >/dev/null 2>&1 || true
             fi
             mkdir -p "$WORK/latest"
             rm -rf "$WORK/latest/$JOB_ID"
             mkdir -p "$WORK/latest/$JOB_ID"
             cp -a "$SRC_DIR"/. "$WORK/latest/$JOB_ID/"
-            cd "$WORK"
-            git add -A
-            if git diff --cached --quiet; then
+            git -C "$WORK" add -A
+            if git -C "$WORK" diff --cached --quiet; then
               echo "No benchmark publish changes for $JOB_ID"
+              cleanup_worktree
               exit 0
             fi
-            git commit -m "chore: update benchmark results for ${JOB_ID}"
-            if git push origin "HEAD:$PUBLISH_BRANCH"; then
+            git -C "$WORK" commit -m "chore: update benchmark results for ${JOB_ID}"
+            if git -C "$WORK" push origin "HEAD:$PUBLISH_BRANCH"; then
               echo "Published $JOB_ID to $PUBLISH_BRANCH/latest/$JOB_ID"
+              cleanup_worktree
               exit 0
             fi
             echo "Push conflict; retrying..."
-            git worktree remove --force "$WORK" 2>/dev/null || rm -rf "$WORK"
+            cleanup_worktree
             attempt=$((attempt + 1))
             sleep $((attempt * 2))
           done
@@ -1041,43 +1066,48 @@ jobs:
             exit 0
           fi
           JOB_ID="${GITHUB_JOB}"
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          ROOT="$GITHUB_WORKSPACE"
+          cd "$ROOT"
+          git config --global --add safe.directory "$ROOT"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           WORK="$RUNNER_TEMP/bench-publish-$JOB_ID"
+          cleanup_worktree() {
+            cd "$ROOT"
+            git worktree remove --force "$WORK" 2>/dev/null || true
+            rm -rf "$WORK"
+          }
           attempt=1
           while [ "$attempt" -le 12 ]; do
             echo "Publish attempt $attempt for $JOB_ID"
-            rm -rf "$WORK"
+            cleanup_worktree
             mkdir -p "$WORK"
             if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
               git worktree add --force "$WORK" "FETCH_HEAD"
             else
               git worktree add --force --detach "$WORK"
-              (
-                cd "$WORK"
-                git checkout --orphan "$PUBLISH_BRANCH"
-                git rm -rf . >/dev/null 2>&1 || true
-              )
+              git -C "$WORK" checkout --orphan "$PUBLISH_BRANCH"
+              git -C "$WORK" rm -rf . >/dev/null 2>&1 || true
             fi
             mkdir -p "$WORK/latest"
             rm -rf "$WORK/latest/$JOB_ID"
             mkdir -p "$WORK/latest/$JOB_ID"
             cp -a "$SRC_DIR"/. "$WORK/latest/$JOB_ID/"
-            cd "$WORK"
-            git add -A
-            if git diff --cached --quiet; then
+            git -C "$WORK" add -A
+            if git -C "$WORK" diff --cached --quiet; then
               echo "No benchmark publish changes for $JOB_ID"
+              cleanup_worktree
               exit 0
             fi
-            git commit -m "chore: update benchmark results for ${JOB_ID}"
-            if git push origin "HEAD:$PUBLISH_BRANCH"; then
+            git -C "$WORK" commit -m "chore: update benchmark results for ${JOB_ID}"
+            if git -C "$WORK" push origin "HEAD:$PUBLISH_BRANCH"; then
               echo "Published $JOB_ID to $PUBLISH_BRANCH/latest/$JOB_ID"
+              cleanup_worktree
               exit 0
             fi
             echo "Push conflict; retrying..."
-            git worktree remove --force "$WORK" 2>/dev/null || rm -rf "$WORK"
+            cleanup_worktree
             attempt=$((attempt + 1))
             sleep $((attempt * 2))
           done
@@ -1195,43 +1225,48 @@ jobs:
             exit 0
           fi
           JOB_ID="${GITHUB_JOB}"
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          ROOT="$GITHUB_WORKSPACE"
+          cd "$ROOT"
+          git config --global --add safe.directory "$ROOT"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           WORK="$RUNNER_TEMP/bench-publish-$JOB_ID"
+          cleanup_worktree() {
+            cd "$ROOT"
+            git worktree remove --force "$WORK" 2>/dev/null || true
+            rm -rf "$WORK"
+          }
           attempt=1
           while [ "$attempt" -le 12 ]; do
             echo "Publish attempt $attempt for $JOB_ID"
-            rm -rf "$WORK"
+            cleanup_worktree
             mkdir -p "$WORK"
             if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
               git worktree add --force "$WORK" "FETCH_HEAD"
             else
               git worktree add --force --detach "$WORK"
-              (
-                cd "$WORK"
-                git checkout --orphan "$PUBLISH_BRANCH"
-                git rm -rf . >/dev/null 2>&1 || true
-              )
+              git -C "$WORK" checkout --orphan "$PUBLISH_BRANCH"
+              git -C "$WORK" rm -rf . >/dev/null 2>&1 || true
             fi
             mkdir -p "$WORK/latest"
             rm -rf "$WORK/latest/$JOB_ID"
             mkdir -p "$WORK/latest/$JOB_ID"
             cp -a "$SRC_DIR"/. "$WORK/latest/$JOB_ID/"
-            cd "$WORK"
-            git add -A
-            if git diff --cached --quiet; then
+            git -C "$WORK" add -A
+            if git -C "$WORK" diff --cached --quiet; then
               echo "No benchmark publish changes for $JOB_ID"
+              cleanup_worktree
               exit 0
             fi
-            git commit -m "chore: update benchmark results for ${JOB_ID}"
-            if git push origin "HEAD:$PUBLISH_BRANCH"; then
+            git -C "$WORK" commit -m "chore: update benchmark results for ${JOB_ID}"
+            if git -C "$WORK" push origin "HEAD:$PUBLISH_BRANCH"; then
               echo "Published $JOB_ID to $PUBLISH_BRANCH/latest/$JOB_ID"
+              cleanup_worktree
               exit 0
             fi
             echo "Push conflict; retrying..."
-            git worktree remove --force "$WORK" 2>/dev/null || rm -rf "$WORK"
+            cleanup_worktree
             attempt=$((attempt + 1))
             sleep $((attempt * 2))
           done
@@ -1349,43 +1384,48 @@ jobs:
             exit 0
           fi
           JOB_ID="${GITHUB_JOB}"
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          ROOT="$GITHUB_WORKSPACE"
+          cd "$ROOT"
+          git config --global --add safe.directory "$ROOT"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           WORK="$RUNNER_TEMP/bench-publish-$JOB_ID"
+          cleanup_worktree() {
+            cd "$ROOT"
+            git worktree remove --force "$WORK" 2>/dev/null || true
+            rm -rf "$WORK"
+          }
           attempt=1
           while [ "$attempt" -le 12 ]; do
             echo "Publish attempt $attempt for $JOB_ID"
-            rm -rf "$WORK"
+            cleanup_worktree
             mkdir -p "$WORK"
             if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
               git worktree add --force "$WORK" "FETCH_HEAD"
             else
               git worktree add --force --detach "$WORK"
-              (
-                cd "$WORK"
-                git checkout --orphan "$PUBLISH_BRANCH"
-                git rm -rf . >/dev/null 2>&1 || true
-              )
+              git -C "$WORK" checkout --orphan "$PUBLISH_BRANCH"
+              git -C "$WORK" rm -rf . >/dev/null 2>&1 || true
             fi
             mkdir -p "$WORK/latest"
             rm -rf "$WORK/latest/$JOB_ID"
             mkdir -p "$WORK/latest/$JOB_ID"
             cp -a "$SRC_DIR"/. "$WORK/latest/$JOB_ID/"
-            cd "$WORK"
-            git add -A
-            if git diff --cached --quiet; then
+            git -C "$WORK" add -A
+            if git -C "$WORK" diff --cached --quiet; then
               echo "No benchmark publish changes for $JOB_ID"
+              cleanup_worktree
               exit 0
             fi
-            git commit -m "chore: update benchmark results for ${JOB_ID}"
-            if git push origin "HEAD:$PUBLISH_BRANCH"; then
+            git -C "$WORK" commit -m "chore: update benchmark results for ${JOB_ID}"
+            if git -C "$WORK" push origin "HEAD:$PUBLISH_BRANCH"; then
               echo "Published $JOB_ID to $PUBLISH_BRANCH/latest/$JOB_ID"
+              cleanup_worktree
               exit 0
             fi
             echo "Push conflict; retrying..."
-            git worktree remove --force "$WORK" 2>/dev/null || rm -rf "$WORK"
+            cleanup_worktree
             attempt=$((attempt + 1))
             sleep $((attempt * 2))
           done
@@ -1503,43 +1543,48 @@ jobs:
             exit 0
           fi
           JOB_ID="${GITHUB_JOB}"
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          ROOT="$GITHUB_WORKSPACE"
+          cd "$ROOT"
+          git config --global --add safe.directory "$ROOT"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           WORK="$RUNNER_TEMP/bench-publish-$JOB_ID"
+          cleanup_worktree() {
+            cd "$ROOT"
+            git worktree remove --force "$WORK" 2>/dev/null || true
+            rm -rf "$WORK"
+          }
           attempt=1
           while [ "$attempt" -le 12 ]; do
             echo "Publish attempt $attempt for $JOB_ID"
-            rm -rf "$WORK"
+            cleanup_worktree
             mkdir -p "$WORK"
             if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
               git worktree add --force "$WORK" "FETCH_HEAD"
             else
               git worktree add --force --detach "$WORK"
-              (
-                cd "$WORK"
-                git checkout --orphan "$PUBLISH_BRANCH"
-                git rm -rf . >/dev/null 2>&1 || true
-              )
+              git -C "$WORK" checkout --orphan "$PUBLISH_BRANCH"
+              git -C "$WORK" rm -rf . >/dev/null 2>&1 || true
             fi
             mkdir -p "$WORK/latest"
             rm -rf "$WORK/latest/$JOB_ID"
             mkdir -p "$WORK/latest/$JOB_ID"
             cp -a "$SRC_DIR"/. "$WORK/latest/$JOB_ID/"
-            cd "$WORK"
-            git add -A
-            if git diff --cached --quiet; then
+            git -C "$WORK" add -A
+            if git -C "$WORK" diff --cached --quiet; then
               echo "No benchmark publish changes for $JOB_ID"
+              cleanup_worktree
               exit 0
             fi
-            git commit -m "chore: update benchmark results for ${JOB_ID}"
-            if git push origin "HEAD:$PUBLISH_BRANCH"; then
+            git -C "$WORK" commit -m "chore: update benchmark results for ${JOB_ID}"
+            if git -C "$WORK" push origin "HEAD:$PUBLISH_BRANCH"; then
               echo "Published $JOB_ID to $PUBLISH_BRANCH/latest/$JOB_ID"
+              cleanup_worktree
               exit 0
             fi
             echo "Push conflict; retrying..."
-            git worktree remove --force "$WORK" 2>/dev/null || rm -rf "$WORK"
+            cleanup_worktree
             attempt=$((attempt + 1))
             sleep $((attempt * 2))
           done
@@ -1657,43 +1702,48 @@ jobs:
             exit 0
           fi
           JOB_ID="${GITHUB_JOB}"
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          ROOT="$GITHUB_WORKSPACE"
+          cd "$ROOT"
+          git config --global --add safe.directory "$ROOT"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           WORK="$RUNNER_TEMP/bench-publish-$JOB_ID"
+          cleanup_worktree() {
+            cd "$ROOT"
+            git worktree remove --force "$WORK" 2>/dev/null || true
+            rm -rf "$WORK"
+          }
           attempt=1
           while [ "$attempt" -le 12 ]; do
             echo "Publish attempt $attempt for $JOB_ID"
-            rm -rf "$WORK"
+            cleanup_worktree
             mkdir -p "$WORK"
             if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
               git worktree add --force "$WORK" "FETCH_HEAD"
             else
               git worktree add --force --detach "$WORK"
-              (
-                cd "$WORK"
-                git checkout --orphan "$PUBLISH_BRANCH"
-                git rm -rf . >/dev/null 2>&1 || true
-              )
+              git -C "$WORK" checkout --orphan "$PUBLISH_BRANCH"
+              git -C "$WORK" rm -rf . >/dev/null 2>&1 || true
             fi
             mkdir -p "$WORK/latest"
             rm -rf "$WORK/latest/$JOB_ID"
             mkdir -p "$WORK/latest/$JOB_ID"
             cp -a "$SRC_DIR"/. "$WORK/latest/$JOB_ID/"
-            cd "$WORK"
-            git add -A
-            if git diff --cached --quiet; then
+            git -C "$WORK" add -A
+            if git -C "$WORK" diff --cached --quiet; then
               echo "No benchmark publish changes for $JOB_ID"
+              cleanup_worktree
               exit 0
             fi
-            git commit -m "chore: update benchmark results for ${JOB_ID}"
-            if git push origin "HEAD:$PUBLISH_BRANCH"; then
+            git -C "$WORK" commit -m "chore: update benchmark results for ${JOB_ID}"
+            if git -C "$WORK" push origin "HEAD:$PUBLISH_BRANCH"; then
               echo "Published $JOB_ID to $PUBLISH_BRANCH/latest/$JOB_ID"
+              cleanup_worktree
               exit 0
             fi
             echo "Push conflict; retrying..."
-            git worktree remove --force "$WORK" 2>/dev/null || rm -rf "$WORK"
+            cleanup_worktree
             attempt=$((attempt + 1))
             sleep $((attempt * 2))
           done
@@ -1811,43 +1861,48 @@ jobs:
             exit 0
           fi
           JOB_ID="${GITHUB_JOB}"
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          ROOT="$GITHUB_WORKSPACE"
+          cd "$ROOT"
+          git config --global --add safe.directory "$ROOT"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           WORK="$RUNNER_TEMP/bench-publish-$JOB_ID"
+          cleanup_worktree() {
+            cd "$ROOT"
+            git worktree remove --force "$WORK" 2>/dev/null || true
+            rm -rf "$WORK"
+          }
           attempt=1
           while [ "$attempt" -le 12 ]; do
             echo "Publish attempt $attempt for $JOB_ID"
-            rm -rf "$WORK"
+            cleanup_worktree
             mkdir -p "$WORK"
             if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
               git worktree add --force "$WORK" "FETCH_HEAD"
             else
               git worktree add --force --detach "$WORK"
-              (
-                cd "$WORK"
-                git checkout --orphan "$PUBLISH_BRANCH"
-                git rm -rf . >/dev/null 2>&1 || true
-              )
+              git -C "$WORK" checkout --orphan "$PUBLISH_BRANCH"
+              git -C "$WORK" rm -rf . >/dev/null 2>&1 || true
             fi
             mkdir -p "$WORK/latest"
             rm -rf "$WORK/latest/$JOB_ID"
             mkdir -p "$WORK/latest/$JOB_ID"
             cp -a "$SRC_DIR"/. "$WORK/latest/$JOB_ID/"
-            cd "$WORK"
-            git add -A
-            if git diff --cached --quiet; then
+            git -C "$WORK" add -A
+            if git -C "$WORK" diff --cached --quiet; then
               echo "No benchmark publish changes for $JOB_ID"
+              cleanup_worktree
               exit 0
             fi
-            git commit -m "chore: update benchmark results for ${JOB_ID}"
-            if git push origin "HEAD:$PUBLISH_BRANCH"; then
+            git -C "$WORK" commit -m "chore: update benchmark results for ${JOB_ID}"
+            if git -C "$WORK" push origin "HEAD:$PUBLISH_BRANCH"; then
               echo "Published $JOB_ID to $PUBLISH_BRANCH/latest/$JOB_ID"
+              cleanup_worktree
               exit 0
             fi
             echo "Push conflict; retrying..."
-            git worktree remove --force "$WORK" 2>/dev/null || rm -rf "$WORK"
+            cleanup_worktree
             attempt=$((attempt + 1))
             sleep $((attempt * 2))
           done
@@ -1965,43 +2020,48 @@ jobs:
             exit 0
           fi
           JOB_ID="${GITHUB_JOB}"
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          ROOT="$GITHUB_WORKSPACE"
+          cd "$ROOT"
+          git config --global --add safe.directory "$ROOT"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           WORK="$RUNNER_TEMP/bench-publish-$JOB_ID"
+          cleanup_worktree() {
+            cd "$ROOT"
+            git worktree remove --force "$WORK" 2>/dev/null || true
+            rm -rf "$WORK"
+          }
           attempt=1
           while [ "$attempt" -le 12 ]; do
             echo "Publish attempt $attempt for $JOB_ID"
-            rm -rf "$WORK"
+            cleanup_worktree
             mkdir -p "$WORK"
             if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
               git worktree add --force "$WORK" "FETCH_HEAD"
             else
               git worktree add --force --detach "$WORK"
-              (
-                cd "$WORK"
-                git checkout --orphan "$PUBLISH_BRANCH"
-                git rm -rf . >/dev/null 2>&1 || true
-              )
+              git -C "$WORK" checkout --orphan "$PUBLISH_BRANCH"
+              git -C "$WORK" rm -rf . >/dev/null 2>&1 || true
             fi
             mkdir -p "$WORK/latest"
             rm -rf "$WORK/latest/$JOB_ID"
             mkdir -p "$WORK/latest/$JOB_ID"
             cp -a "$SRC_DIR"/. "$WORK/latest/$JOB_ID/"
-            cd "$WORK"
-            git add -A
-            if git diff --cached --quiet; then
+            git -C "$WORK" add -A
+            if git -C "$WORK" diff --cached --quiet; then
               echo "No benchmark publish changes for $JOB_ID"
+              cleanup_worktree
               exit 0
             fi
-            git commit -m "chore: update benchmark results for ${JOB_ID}"
-            if git push origin "HEAD:$PUBLISH_BRANCH"; then
+            git -C "$WORK" commit -m "chore: update benchmark results for ${JOB_ID}"
+            if git -C "$WORK" push origin "HEAD:$PUBLISH_BRANCH"; then
               echo "Published $JOB_ID to $PUBLISH_BRANCH/latest/$JOB_ID"
+              cleanup_worktree
               exit 0
             fi
             echo "Push conflict; retrying..."
-            git worktree remove --force "$WORK" 2>/dev/null || rm -rf "$WORK"
+            cleanup_worktree
             attempt=$((attempt + 1))
             sleep $((attempt * 2))
           done
@@ -2118,43 +2178,48 @@ jobs:
             exit 0
           fi
           JOB_ID="${GITHUB_JOB}"
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          ROOT="$GITHUB_WORKSPACE"
+          cd "$ROOT"
+          git config --global --add safe.directory "$ROOT"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           WORK="$RUNNER_TEMP/bench-publish-$JOB_ID"
+          cleanup_worktree() {
+            cd "$ROOT"
+            git worktree remove --force "$WORK" 2>/dev/null || true
+            rm -rf "$WORK"
+          }
           attempt=1
           while [ "$attempt" -le 12 ]; do
             echo "Publish attempt $attempt for $JOB_ID"
-            rm -rf "$WORK"
+            cleanup_worktree
             mkdir -p "$WORK"
             if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
               git worktree add --force "$WORK" "FETCH_HEAD"
             else
               git worktree add --force --detach "$WORK"
-              (
-                cd "$WORK"
-                git checkout --orphan "$PUBLISH_BRANCH"
-                git rm -rf . >/dev/null 2>&1 || true
-              )
+              git -C "$WORK" checkout --orphan "$PUBLISH_BRANCH"
+              git -C "$WORK" rm -rf . >/dev/null 2>&1 || true
             fi
             mkdir -p "$WORK/latest"
             rm -rf "$WORK/latest/$JOB_ID"
             mkdir -p "$WORK/latest/$JOB_ID"
             cp -a "$SRC_DIR"/. "$WORK/latest/$JOB_ID/"
-            cd "$WORK"
-            git add -A
-            if git diff --cached --quiet; then
+            git -C "$WORK" add -A
+            if git -C "$WORK" diff --cached --quiet; then
               echo "No benchmark publish changes for $JOB_ID"
+              cleanup_worktree
               exit 0
             fi
-            git commit -m "chore: update benchmark results for ${JOB_ID}"
-            if git push origin "HEAD:$PUBLISH_BRANCH"; then
+            git -C "$WORK" commit -m "chore: update benchmark results for ${JOB_ID}"
+            if git -C "$WORK" push origin "HEAD:$PUBLISH_BRANCH"; then
               echo "Published $JOB_ID to $PUBLISH_BRANCH/latest/$JOB_ID"
+              cleanup_worktree
               exit 0
             fi
             echo "Push conflict; retrying..."
-            git worktree remove --force "$WORK" 2>/dev/null || rm -rf "$WORK"
+            cleanup_worktree
             attempt=$((attempt + 1))
             sleep $((attempt * 2))
           done
@@ -2365,43 +2430,48 @@ jobs:
             exit 0
           fi
           JOB_ID="${GITHUB_JOB}"
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          ROOT="$GITHUB_WORKSPACE"
+          cd "$ROOT"
+          git config --global --add safe.directory "$ROOT"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           WORK="$RUNNER_TEMP/bench-publish-$JOB_ID"
+          cleanup_worktree() {
+            cd "$ROOT"
+            git worktree remove --force "$WORK" 2>/dev/null || true
+            rm -rf "$WORK"
+          }
           attempt=1
           while [ "$attempt" -le 12 ]; do
             echo "Publish attempt $attempt for $JOB_ID"
-            rm -rf "$WORK"
+            cleanup_worktree
             mkdir -p "$WORK"
             if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
               git worktree add --force "$WORK" "FETCH_HEAD"
             else
               git worktree add --force --detach "$WORK"
-              (
-                cd "$WORK"
-                git checkout --orphan "$PUBLISH_BRANCH"
-                git rm -rf . >/dev/null 2>&1 || true
-              )
+              git -C "$WORK" checkout --orphan "$PUBLISH_BRANCH"
+              git -C "$WORK" rm -rf . >/dev/null 2>&1 || true
             fi
             mkdir -p "$WORK/latest"
             rm -rf "$WORK/latest/$JOB_ID"
             mkdir -p "$WORK/latest/$JOB_ID"
             cp -a "$SRC_DIR"/. "$WORK/latest/$JOB_ID/"
-            cd "$WORK"
-            git add -A
-            if git diff --cached --quiet; then
+            git -C "$WORK" add -A
+            if git -C "$WORK" diff --cached --quiet; then
               echo "No benchmark publish changes for $JOB_ID"
+              cleanup_worktree
               exit 0
             fi
-            git commit -m "chore: update benchmark results for ${JOB_ID}"
-            if git push origin "HEAD:$PUBLISH_BRANCH"; then
+            git -C "$WORK" commit -m "chore: update benchmark results for ${JOB_ID}"
+            if git -C "$WORK" push origin "HEAD:$PUBLISH_BRANCH"; then
               echo "Published $JOB_ID to $PUBLISH_BRANCH/latest/$JOB_ID"
+              cleanup_worktree
               exit 0
             fi
             echo "Push conflict; retrying..."
-            git worktree remove --force "$WORK" 2>/dev/null || rm -rf "$WORK"
+            cleanup_worktree
             attempt=$((attempt + 1))
             sleep $((attempt * 2))
           done
@@ -2525,43 +2595,48 @@ jobs:
             exit 0
           fi
           JOB_ID="${GITHUB_JOB}"
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          ROOT="$GITHUB_WORKSPACE"
+          cd "$ROOT"
+          git config --global --add safe.directory "$ROOT"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           WORK="$RUNNER_TEMP/bench-publish-$JOB_ID"
+          cleanup_worktree() {
+            cd "$ROOT"
+            git worktree remove --force "$WORK" 2>/dev/null || true
+            rm -rf "$WORK"
+          }
           attempt=1
           while [ "$attempt" -le 12 ]; do
             echo "Publish attempt $attempt for $JOB_ID"
-            rm -rf "$WORK"
+            cleanup_worktree
             mkdir -p "$WORK"
             if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
               git worktree add --force "$WORK" "FETCH_HEAD"
             else
               git worktree add --force --detach "$WORK"
-              (
-                cd "$WORK"
-                git checkout --orphan "$PUBLISH_BRANCH"
-                git rm -rf . >/dev/null 2>&1 || true
-              )
+              git -C "$WORK" checkout --orphan "$PUBLISH_BRANCH"
+              git -C "$WORK" rm -rf . >/dev/null 2>&1 || true
             fi
             mkdir -p "$WORK/latest"
             rm -rf "$WORK/latest/$JOB_ID"
             mkdir -p "$WORK/latest/$JOB_ID"
             cp -a "$SRC_DIR"/. "$WORK/latest/$JOB_ID/"
-            cd "$WORK"
-            git add -A
-            if git diff --cached --quiet; then
+            git -C "$WORK" add -A
+            if git -C "$WORK" diff --cached --quiet; then
               echo "No benchmark publish changes for $JOB_ID"
+              cleanup_worktree
               exit 0
             fi
-            git commit -m "chore: update benchmark results for ${JOB_ID}"
-            if git push origin "HEAD:$PUBLISH_BRANCH"; then
+            git -C "$WORK" commit -m "chore: update benchmark results for ${JOB_ID}"
+            if git -C "$WORK" push origin "HEAD:$PUBLISH_BRANCH"; then
               echo "Published $JOB_ID to $PUBLISH_BRANCH/latest/$JOB_ID"
+              cleanup_worktree
               exit 0
             fi
             echo "Push conflict; retrying..."
-            git worktree remove --force "$WORK" 2>/dev/null || rm -rf "$WORK"
+            cleanup_worktree
             attempt=$((attempt + 1))
             sleep $((attempt * 2))
           done
@@ -2772,43 +2847,48 @@ jobs:
             exit 0
           fi
           JOB_ID="${GITHUB_JOB}"
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          ROOT="$GITHUB_WORKSPACE"
+          cd "$ROOT"
+          git config --global --add safe.directory "$ROOT"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           WORK="$RUNNER_TEMP/bench-publish-$JOB_ID"
+          cleanup_worktree() {
+            cd "$ROOT"
+            git worktree remove --force "$WORK" 2>/dev/null || true
+            rm -rf "$WORK"
+          }
           attempt=1
           while [ "$attempt" -le 12 ]; do
             echo "Publish attempt $attempt for $JOB_ID"
-            rm -rf "$WORK"
+            cleanup_worktree
             mkdir -p "$WORK"
             if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
               git worktree add --force "$WORK" "FETCH_HEAD"
             else
               git worktree add --force --detach "$WORK"
-              (
-                cd "$WORK"
-                git checkout --orphan "$PUBLISH_BRANCH"
-                git rm -rf . >/dev/null 2>&1 || true
-              )
+              git -C "$WORK" checkout --orphan "$PUBLISH_BRANCH"
+              git -C "$WORK" rm -rf . >/dev/null 2>&1 || true
             fi
             mkdir -p "$WORK/latest"
             rm -rf "$WORK/latest/$JOB_ID"
             mkdir -p "$WORK/latest/$JOB_ID"
             cp -a "$SRC_DIR"/. "$WORK/latest/$JOB_ID/"
-            cd "$WORK"
-            git add -A
-            if git diff --cached --quiet; then
+            git -C "$WORK" add -A
+            if git -C "$WORK" diff --cached --quiet; then
               echo "No benchmark publish changes for $JOB_ID"
+              cleanup_worktree
               exit 0
             fi
-            git commit -m "chore: update benchmark results for ${JOB_ID}"
-            if git push origin "HEAD:$PUBLISH_BRANCH"; then
+            git -C "$WORK" commit -m "chore: update benchmark results for ${JOB_ID}"
+            if git -C "$WORK" push origin "HEAD:$PUBLISH_BRANCH"; then
               echo "Published $JOB_ID to $PUBLISH_BRANCH/latest/$JOB_ID"
+              cleanup_worktree
               exit 0
             fi
             echo "Push conflict; retrying..."
-            git worktree remove --force "$WORK" 2>/dev/null || rm -rf "$WORK"
+            cleanup_worktree
             attempt=$((attempt + 1))
             sleep $((attempt * 2))
           done
@@ -2932,43 +3012,48 @@ jobs:
             exit 0
           fi
           JOB_ID="${GITHUB_JOB}"
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          ROOT="$GITHUB_WORKSPACE"
+          cd "$ROOT"
+          git config --global --add safe.directory "$ROOT"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           WORK="$RUNNER_TEMP/bench-publish-$JOB_ID"
+          cleanup_worktree() {
+            cd "$ROOT"
+            git worktree remove --force "$WORK" 2>/dev/null || true
+            rm -rf "$WORK"
+          }
           attempt=1
           while [ "$attempt" -le 12 ]; do
             echo "Publish attempt $attempt for $JOB_ID"
-            rm -rf "$WORK"
+            cleanup_worktree
             mkdir -p "$WORK"
             if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
               git worktree add --force "$WORK" "FETCH_HEAD"
             else
               git worktree add --force --detach "$WORK"
-              (
-                cd "$WORK"
-                git checkout --orphan "$PUBLISH_BRANCH"
-                git rm -rf . >/dev/null 2>&1 || true
-              )
+              git -C "$WORK" checkout --orphan "$PUBLISH_BRANCH"
+              git -C "$WORK" rm -rf . >/dev/null 2>&1 || true
             fi
             mkdir -p "$WORK/latest"
             rm -rf "$WORK/latest/$JOB_ID"
             mkdir -p "$WORK/latest/$JOB_ID"
             cp -a "$SRC_DIR"/. "$WORK/latest/$JOB_ID/"
-            cd "$WORK"
-            git add -A
-            if git diff --cached --quiet; then
+            git -C "$WORK" add -A
+            if git -C "$WORK" diff --cached --quiet; then
               echo "No benchmark publish changes for $JOB_ID"
+              cleanup_worktree
               exit 0
             fi
-            git commit -m "chore: update benchmark results for ${JOB_ID}"
-            if git push origin "HEAD:$PUBLISH_BRANCH"; then
+            git -C "$WORK" commit -m "chore: update benchmark results for ${JOB_ID}"
+            if git -C "$WORK" push origin "HEAD:$PUBLISH_BRANCH"; then
               echo "Published $JOB_ID to $PUBLISH_BRANCH/latest/$JOB_ID"
+              cleanup_worktree
               exit 0
             fi
             echo "Push conflict; retrying..."
-            git worktree remove --force "$WORK" 2>/dev/null || rm -rf "$WORK"
+            cleanup_worktree
             attempt=$((attempt + 1))
             sleep $((attempt * 2))
           done
@@ -3085,43 +3170,48 @@ jobs:
             exit 0
           fi
           JOB_ID="${GITHUB_JOB}"
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          ROOT="$GITHUB_WORKSPACE"
+          cd "$ROOT"
+          git config --global --add safe.directory "$ROOT"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           WORK="$RUNNER_TEMP/bench-publish-$JOB_ID"
+          cleanup_worktree() {
+            cd "$ROOT"
+            git worktree remove --force "$WORK" 2>/dev/null || true
+            rm -rf "$WORK"
+          }
           attempt=1
           while [ "$attempt" -le 12 ]; do
             echo "Publish attempt $attempt for $JOB_ID"
-            rm -rf "$WORK"
+            cleanup_worktree
             mkdir -p "$WORK"
             if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
               git worktree add --force "$WORK" "FETCH_HEAD"
             else
               git worktree add --force --detach "$WORK"
-              (
-                cd "$WORK"
-                git checkout --orphan "$PUBLISH_BRANCH"
-                git rm -rf . >/dev/null 2>&1 || true
-              )
+              git -C "$WORK" checkout --orphan "$PUBLISH_BRANCH"
+              git -C "$WORK" rm -rf . >/dev/null 2>&1 || true
             fi
             mkdir -p "$WORK/latest"
             rm -rf "$WORK/latest/$JOB_ID"
             mkdir -p "$WORK/latest/$JOB_ID"
             cp -a "$SRC_DIR"/. "$WORK/latest/$JOB_ID/"
-            cd "$WORK"
-            git add -A
-            if git diff --cached --quiet; then
+            git -C "$WORK" add -A
+            if git -C "$WORK" diff --cached --quiet; then
               echo "No benchmark publish changes for $JOB_ID"
+              cleanup_worktree
               exit 0
             fi
-            git commit -m "chore: update benchmark results for ${JOB_ID}"
-            if git push origin "HEAD:$PUBLISH_BRANCH"; then
+            git -C "$WORK" commit -m "chore: update benchmark results for ${JOB_ID}"
+            if git -C "$WORK" push origin "HEAD:$PUBLISH_BRANCH"; then
               echo "Published $JOB_ID to $PUBLISH_BRANCH/latest/$JOB_ID"
+              cleanup_worktree
               exit 0
             fi
             echo "Push conflict; retrying..."
-            git worktree remove --force "$WORK" 2>/dev/null || rm -rf "$WORK"
+            cleanup_worktree
             attempt=$((attempt + 1))
             sleep $((attempt * 2))
           done
@@ -3237,43 +3327,48 @@ jobs:
             exit 0
           fi
           JOB_ID="${GITHUB_JOB}"
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          ROOT="$GITHUB_WORKSPACE"
+          cd "$ROOT"
+          git config --global --add safe.directory "$ROOT"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           WORK="$RUNNER_TEMP/bench-publish-$JOB_ID"
+          cleanup_worktree() {
+            cd "$ROOT"
+            git worktree remove --force "$WORK" 2>/dev/null || true
+            rm -rf "$WORK"
+          }
           attempt=1
           while [ "$attempt" -le 12 ]; do
             echo "Publish attempt $attempt for $JOB_ID"
-            rm -rf "$WORK"
+            cleanup_worktree
             mkdir -p "$WORK"
             if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
               git worktree add --force "$WORK" "FETCH_HEAD"
             else
               git worktree add --force --detach "$WORK"
-              (
-                cd "$WORK"
-                git checkout --orphan "$PUBLISH_BRANCH"
-                git rm -rf . >/dev/null 2>&1 || true
-              )
+              git -C "$WORK" checkout --orphan "$PUBLISH_BRANCH"
+              git -C "$WORK" rm -rf . >/dev/null 2>&1 || true
             fi
             mkdir -p "$WORK/latest"
             rm -rf "$WORK/latest/$JOB_ID"
             mkdir -p "$WORK/latest/$JOB_ID"
             cp -a "$SRC_DIR"/. "$WORK/latest/$JOB_ID/"
-            cd "$WORK"
-            git add -A
-            if git diff --cached --quiet; then
+            git -C "$WORK" add -A
+            if git -C "$WORK" diff --cached --quiet; then
               echo "No benchmark publish changes for $JOB_ID"
+              cleanup_worktree
               exit 0
             fi
-            git commit -m "chore: update benchmark results for ${JOB_ID}"
-            if git push origin "HEAD:$PUBLISH_BRANCH"; then
+            git -C "$WORK" commit -m "chore: update benchmark results for ${JOB_ID}"
+            if git -C "$WORK" push origin "HEAD:$PUBLISH_BRANCH"; then
               echo "Published $JOB_ID to $PUBLISH_BRANCH/latest/$JOB_ID"
+              cleanup_worktree
               exit 0
             fi
             echo "Push conflict; retrying..."
-            git worktree remove --force "$WORK" 2>/dev/null || rm -rf "$WORK"
+            cleanup_worktree
             attempt=$((attempt + 1))
             sleep $((attempt * 2))
           done
@@ -3388,43 +3483,48 @@ jobs:
             exit 0
           fi
           JOB_ID="${GITHUB_JOB}"
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          ROOT="$GITHUB_WORKSPACE"
+          cd "$ROOT"
+          git config --global --add safe.directory "$ROOT"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           WORK="$RUNNER_TEMP/bench-publish-$JOB_ID"
+          cleanup_worktree() {
+            cd "$ROOT"
+            git worktree remove --force "$WORK" 2>/dev/null || true
+            rm -rf "$WORK"
+          }
           attempt=1
           while [ "$attempt" -le 12 ]; do
             echo "Publish attempt $attempt for $JOB_ID"
-            rm -rf "$WORK"
+            cleanup_worktree
             mkdir -p "$WORK"
             if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
               git worktree add --force "$WORK" "FETCH_HEAD"
             else
               git worktree add --force --detach "$WORK"
-              (
-                cd "$WORK"
-                git checkout --orphan "$PUBLISH_BRANCH"
-                git rm -rf . >/dev/null 2>&1 || true
-              )
+              git -C "$WORK" checkout --orphan "$PUBLISH_BRANCH"
+              git -C "$WORK" rm -rf . >/dev/null 2>&1 || true
             fi
             mkdir -p "$WORK/latest"
             rm -rf "$WORK/latest/$JOB_ID"
             mkdir -p "$WORK/latest/$JOB_ID"
             cp -a "$SRC_DIR"/. "$WORK/latest/$JOB_ID/"
-            cd "$WORK"
-            git add -A
-            if git diff --cached --quiet; then
+            git -C "$WORK" add -A
+            if git -C "$WORK" diff --cached --quiet; then
               echo "No benchmark publish changes for $JOB_ID"
+              cleanup_worktree
               exit 0
             fi
-            git commit -m "chore: update benchmark results for ${JOB_ID}"
-            if git push origin "HEAD:$PUBLISH_BRANCH"; then
+            git -C "$WORK" commit -m "chore: update benchmark results for ${JOB_ID}"
+            if git -C "$WORK" push origin "HEAD:$PUBLISH_BRANCH"; then
               echo "Published $JOB_ID to $PUBLISH_BRANCH/latest/$JOB_ID"
+              cleanup_worktree
               exit 0
             fi
             echo "Push conflict; retrying..."
-            git worktree remove --force "$WORK" 2>/dev/null || rm -rf "$WORK"
+            cleanup_worktree
             attempt=$((attempt + 1))
             sleep $((attempt * 2))
           done
@@ -3543,43 +3643,48 @@ jobs:
             exit 0
           fi
           JOB_ID="${GITHUB_JOB}"
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          ROOT="$GITHUB_WORKSPACE"
+          cd "$ROOT"
+          git config --global --add safe.directory "$ROOT"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           WORK="$RUNNER_TEMP/bench-publish-$JOB_ID"
+          cleanup_worktree() {
+            cd "$ROOT"
+            git worktree remove --force "$WORK" 2>/dev/null || true
+            rm -rf "$WORK"
+          }
           attempt=1
           while [ "$attempt" -le 12 ]; do
             echo "Publish attempt $attempt for $JOB_ID"
-            rm -rf "$WORK"
+            cleanup_worktree
             mkdir -p "$WORK"
             if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
               git worktree add --force "$WORK" "FETCH_HEAD"
             else
               git worktree add --force --detach "$WORK"
-              (
-                cd "$WORK"
-                git checkout --orphan "$PUBLISH_BRANCH"
-                git rm -rf . >/dev/null 2>&1 || true
-              )
+              git -C "$WORK" checkout --orphan "$PUBLISH_BRANCH"
+              git -C "$WORK" rm -rf . >/dev/null 2>&1 || true
             fi
             mkdir -p "$WORK/latest"
             rm -rf "$WORK/latest/$JOB_ID"
             mkdir -p "$WORK/latest/$JOB_ID"
             cp -a "$SRC_DIR"/. "$WORK/latest/$JOB_ID/"
-            cd "$WORK"
-            git add -A
-            if git diff --cached --quiet; then
+            git -C "$WORK" add -A
+            if git -C "$WORK" diff --cached --quiet; then
               echo "No benchmark publish changes for $JOB_ID"
+              cleanup_worktree
               exit 0
             fi
-            git commit -m "chore: update benchmark results for ${JOB_ID}"
-            if git push origin "HEAD:$PUBLISH_BRANCH"; then
+            git -C "$WORK" commit -m "chore: update benchmark results for ${JOB_ID}"
+            if git -C "$WORK" push origin "HEAD:$PUBLISH_BRANCH"; then
               echo "Published $JOB_ID to $PUBLISH_BRANCH/latest/$JOB_ID"
+              cleanup_worktree
               exit 0
             fi
             echo "Push conflict; retrying..."
-            git worktree remove --force "$WORK" 2>/dev/null || rm -rf "$WORK"
+            cleanup_worktree
             attempt=$((attempt + 1))
             sleep $((attempt * 2))
           done
@@ -3703,43 +3808,48 @@ jobs:
             exit 0
           fi
           JOB_ID="${GITHUB_JOB}"
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          ROOT="$GITHUB_WORKSPACE"
+          cd "$ROOT"
+          git config --global --add safe.directory "$ROOT"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           WORK="$RUNNER_TEMP/bench-publish-$JOB_ID"
+          cleanup_worktree() {
+            cd "$ROOT"
+            git worktree remove --force "$WORK" 2>/dev/null || true
+            rm -rf "$WORK"
+          }
           attempt=1
           while [ "$attempt" -le 12 ]; do
             echo "Publish attempt $attempt for $JOB_ID"
-            rm -rf "$WORK"
+            cleanup_worktree
             mkdir -p "$WORK"
             if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
               git worktree add --force "$WORK" "FETCH_HEAD"
             else
               git worktree add --force --detach "$WORK"
-              (
-                cd "$WORK"
-                git checkout --orphan "$PUBLISH_BRANCH"
-                git rm -rf . >/dev/null 2>&1 || true
-              )
+              git -C "$WORK" checkout --orphan "$PUBLISH_BRANCH"
+              git -C "$WORK" rm -rf . >/dev/null 2>&1 || true
             fi
             mkdir -p "$WORK/latest"
             rm -rf "$WORK/latest/$JOB_ID"
             mkdir -p "$WORK/latest/$JOB_ID"
             cp -a "$SRC_DIR"/. "$WORK/latest/$JOB_ID/"
-            cd "$WORK"
-            git add -A
-            if git diff --cached --quiet; then
+            git -C "$WORK" add -A
+            if git -C "$WORK" diff --cached --quiet; then
               echo "No benchmark publish changes for $JOB_ID"
+              cleanup_worktree
               exit 0
             fi
-            git commit -m "chore: update benchmark results for ${JOB_ID}"
-            if git push origin "HEAD:$PUBLISH_BRANCH"; then
+            git -C "$WORK" commit -m "chore: update benchmark results for ${JOB_ID}"
+            if git -C "$WORK" push origin "HEAD:$PUBLISH_BRANCH"; then
               echo "Published $JOB_ID to $PUBLISH_BRANCH/latest/$JOB_ID"
+              cleanup_worktree
               exit 0
             fi
             echo "Push conflict; retrying..."
-            git worktree remove --force "$WORK" 2>/dev/null || rm -rf "$WORK"
+            cleanup_worktree
             attempt=$((attempt + 1))
             sleep $((attempt * 2))
           done
