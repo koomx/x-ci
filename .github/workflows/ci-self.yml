@@ -13,7 +13,29 @@ jobs:
       contents: write
     uses: ./.github/workflows/vcpkg-template.yml
     with:
+      # Enable full matrix for self-test
+      enable-std17-ubuntu20-amd64: true
+      enable-std17-ubuntu20-arm64: true
+      enable-std17-debian11-amd64: true
+      enable-std17-debian11-arm64: true
+      enable-std17-centos7-amd64: true
+      enable-std17-centos7-arm64: true
+      enable-std20-ubuntu22-amd64: true
+      enable-std20-ubuntu22-arm64: true
       enable-std20-ubuntu24-amd64: true
+      enable-std20-ubuntu24-arm64: true
+      enable-std20-debian12-amd64: true
+      enable-std20-debian12-arm64: true
+      enable-std20-alpine319-amd64: true
+      enable-std20-alpine319-arm64: true
+      enable-std20-alpine320-amd64: true
+      enable-std20-alpine320-arm64: true
+      enable-std20-centos9-amd64: true
+      enable-std20-centos9-arm64: true
+      enable-macos-arm64: true
+      enable-macos-x86: true
+      enable-windows: true
+      enable-windows-arm64: true
       config-command: |
         cmake -S test -B build -G Ninja
       build-command: |
@@ -25,4 +47,5 @@ jobs:
       plot-command: |
         python3 scripts/plot_demo.py
       benchmark-publish-branch: benchmark-results
-      benchmark-publish-job: std20-ubuntu24-amd64
+      # empty = every job publishes to latest/<job-id>/
+      benchmark-publish-job: ''

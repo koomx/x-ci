@@ -37,7 +37,7 @@ on:
         type: string
         default: ''
       benchmark-publish-job:
-        description: 'Only this job id publishes to the branch'
+        description: 'If set, only this job publishes; empty = every job publishes under latest/<job-id>/'
         required: false
         type: string
         default: ''
@@ -254,7 +254,7 @@ jobs:
           path: ${{ inputs.benchmark-artifact-path }}
           if-no-files-found: ignore
       - name: Publish benchmark results
-        if: ${{ inputs.benchmark-publish-branch != '' && inputs.benchmark-publish-job == 'std17-ubuntu20-amd64' && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+        if: ${{ inputs.benchmark-publish-branch != '' && (inputs.benchmark-publish-job == '' || inputs.benchmark-publish-job == 'std17-ubuntu20-amd64') && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
         shell: bash
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
@@ -265,34 +265,49 @@ jobs:
             echo "No benchmark results at $SRC_DIR; skip publish"
             exit 0
           fi
+          JOB_ID="${GITHUB_JOB}"
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          WORK="$RUNNER_TEMP/bench-publish"
-          rm -rf "$WORK"
-          mkdir -p "$WORK"
-          if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
-            git worktree add --force "$WORK" "origin/$PUBLISH_BRANCH"
-          else
-            git worktree add --force --detach "$WORK"
-            (
-              cd "$WORK"
-              git checkout --orphan "$PUBLISH_BRANCH"
-              git rm -rf . >/dev/null 2>&1 || true
-            )
-          fi
-          rm -rf "$WORK/latest"
-          mkdir -p "$WORK/latest"
-          cp -a "$SRC_DIR"/. "$WORK/latest/"
-          cd "$WORK"
-          git add -A
-          if git diff --cached --quiet; then
-            echo "No benchmark publish changes"
-            exit 0
-          fi
-          git commit -m "chore: update benchmark results"
-          git push origin "HEAD:$PUBLISH_BRANCH"
+          WORK="$RUNNER_TEMP/bench-publish-$JOB_ID"
+          attempt=1
+          while [ "$attempt" -le 12 ]; do
+            echo "Publish attempt $attempt for $JOB_ID"
+            rm -rf "$WORK"
+            mkdir -p "$WORK"
+            if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
+              git worktree add --force "$WORK" "FETCH_HEAD"
+            else
+              git worktree add --force --detach "$WORK"
+              (
+                cd "$WORK"
+                git checkout --orphan "$PUBLISH_BRANCH"
+                git rm -rf . >/dev/null 2>&1 || true
+              )
+            fi
+            mkdir -p "$WORK/latest"
+            rm -rf "$WORK/latest/$JOB_ID"
+            mkdir -p "$WORK/latest/$JOB_ID"
+            cp -a "$SRC_DIR"/. "$WORK/latest/$JOB_ID/"
+            cd "$WORK"
+            git add -A
+            if git diff --cached --quiet; then
+              echo "No benchmark publish changes for $JOB_ID"
+              exit 0
+            fi
+            git commit -m "chore: update benchmark results for ${JOB_ID}"
+            if git push origin "HEAD:$PUBLISH_BRANCH"; then
+              echo "Published $JOB_ID to $PUBLISH_BRANCH/latest/$JOB_ID"
+              exit 0
+            fi
+            echo "Push conflict; retrying..."
+            git worktree remove --force "$WORK" 2>/dev/null || rm -rf "$WORK"
+            attempt=$((attempt + 1))
+            sleep $((attempt * 2))
+          done
+          echo "Failed to publish after retries"
+          exit 1
 
       - name: Gather kmpkg logs
         if: failure()
@@ -392,7 +407,7 @@ jobs:
           path: ${{ inputs.benchmark-artifact-path }}
           if-no-files-found: ignore
       - name: Publish benchmark results
-        if: ${{ inputs.benchmark-publish-branch != '' && inputs.benchmark-publish-job == 'std17-ubuntu20-arm64' && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+        if: ${{ inputs.benchmark-publish-branch != '' && (inputs.benchmark-publish-job == '' || inputs.benchmark-publish-job == 'std17-ubuntu20-arm64') && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
         shell: bash
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
@@ -403,34 +418,49 @@ jobs:
             echo "No benchmark results at $SRC_DIR; skip publish"
             exit 0
           fi
+          JOB_ID="${GITHUB_JOB}"
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          WORK="$RUNNER_TEMP/bench-publish"
-          rm -rf "$WORK"
-          mkdir -p "$WORK"
-          if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
-            git worktree add --force "$WORK" "origin/$PUBLISH_BRANCH"
-          else
-            git worktree add --force --detach "$WORK"
-            (
-              cd "$WORK"
-              git checkout --orphan "$PUBLISH_BRANCH"
-              git rm -rf . >/dev/null 2>&1 || true
-            )
-          fi
-          rm -rf "$WORK/latest"
-          mkdir -p "$WORK/latest"
-          cp -a "$SRC_DIR"/. "$WORK/latest/"
-          cd "$WORK"
-          git add -A
-          if git diff --cached --quiet; then
-            echo "No benchmark publish changes"
-            exit 0
-          fi
-          git commit -m "chore: update benchmark results"
-          git push origin "HEAD:$PUBLISH_BRANCH"
+          WORK="$RUNNER_TEMP/bench-publish-$JOB_ID"
+          attempt=1
+          while [ "$attempt" -le 12 ]; do
+            echo "Publish attempt $attempt for $JOB_ID"
+            rm -rf "$WORK"
+            mkdir -p "$WORK"
+            if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
+              git worktree add --force "$WORK" "FETCH_HEAD"
+            else
+              git worktree add --force --detach "$WORK"
+              (
+                cd "$WORK"
+                git checkout --orphan "$PUBLISH_BRANCH"
+                git rm -rf . >/dev/null 2>&1 || true
+              )
+            fi
+            mkdir -p "$WORK/latest"
+            rm -rf "$WORK/latest/$JOB_ID"
+            mkdir -p "$WORK/latest/$JOB_ID"
+            cp -a "$SRC_DIR"/. "$WORK/latest/$JOB_ID/"
+            cd "$WORK"
+            git add -A
+            if git diff --cached --quiet; then
+              echo "No benchmark publish changes for $JOB_ID"
+              exit 0
+            fi
+            git commit -m "chore: update benchmark results for ${JOB_ID}"
+            if git push origin "HEAD:$PUBLISH_BRANCH"; then
+              echo "Published $JOB_ID to $PUBLISH_BRANCH/latest/$JOB_ID"
+              exit 0
+            fi
+            echo "Push conflict; retrying..."
+            git worktree remove --force "$WORK" 2>/dev/null || rm -rf "$WORK"
+            attempt=$((attempt + 1))
+            sleep $((attempt * 2))
+          done
+          echo "Failed to publish after retries"
+          exit 1
 
       - name: Gather kmpkg logs
         if: failure()
@@ -530,7 +560,7 @@ jobs:
           path: ${{ inputs.benchmark-artifact-path }}
           if-no-files-found: ignore
       - name: Publish benchmark results
-        if: ${{ inputs.benchmark-publish-branch != '' && inputs.benchmark-publish-job == 'std17-debian11-amd64' && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+        if: ${{ inputs.benchmark-publish-branch != '' && (inputs.benchmark-publish-job == '' || inputs.benchmark-publish-job == 'std17-debian11-amd64') && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
         shell: bash
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
@@ -541,34 +571,49 @@ jobs:
             echo "No benchmark results at $SRC_DIR; skip publish"
             exit 0
           fi
+          JOB_ID="${GITHUB_JOB}"
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          WORK="$RUNNER_TEMP/bench-publish"
-          rm -rf "$WORK"
-          mkdir -p "$WORK"
-          if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
-            git worktree add --force "$WORK" "origin/$PUBLISH_BRANCH"
-          else
-            git worktree add --force --detach "$WORK"
-            (
-              cd "$WORK"
-              git checkout --orphan "$PUBLISH_BRANCH"
-              git rm -rf . >/dev/null 2>&1 || true
-            )
-          fi
-          rm -rf "$WORK/latest"
-          mkdir -p "$WORK/latest"
-          cp -a "$SRC_DIR"/. "$WORK/latest/"
-          cd "$WORK"
-          git add -A
-          if git diff --cached --quiet; then
-            echo "No benchmark publish changes"
-            exit 0
-          fi
-          git commit -m "chore: update benchmark results"
-          git push origin "HEAD:$PUBLISH_BRANCH"
+          WORK="$RUNNER_TEMP/bench-publish-$JOB_ID"
+          attempt=1
+          while [ "$attempt" -le 12 ]; do
+            echo "Publish attempt $attempt for $JOB_ID"
+            rm -rf "$WORK"
+            mkdir -p "$WORK"
+            if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
+              git worktree add --force "$WORK" "FETCH_HEAD"
+            else
+              git worktree add --force --detach "$WORK"
+              (
+                cd "$WORK"
+                git checkout --orphan "$PUBLISH_BRANCH"
+                git rm -rf . >/dev/null 2>&1 || true
+              )
+            fi
+            mkdir -p "$WORK/latest"
+            rm -rf "$WORK/latest/$JOB_ID"
+            mkdir -p "$WORK/latest/$JOB_ID"
+            cp -a "$SRC_DIR"/. "$WORK/latest/$JOB_ID/"
+            cd "$WORK"
+            git add -A
+            if git diff --cached --quiet; then
+              echo "No benchmark publish changes for $JOB_ID"
+              exit 0
+            fi
+            git commit -m "chore: update benchmark results for ${JOB_ID}"
+            if git push origin "HEAD:$PUBLISH_BRANCH"; then
+              echo "Published $JOB_ID to $PUBLISH_BRANCH/latest/$JOB_ID"
+              exit 0
+            fi
+            echo "Push conflict; retrying..."
+            git worktree remove --force "$WORK" 2>/dev/null || rm -rf "$WORK"
+            attempt=$((attempt + 1))
+            sleep $((attempt * 2))
+          done
+          echo "Failed to publish after retries"
+          exit 1
 
       - name: Gather kmpkg logs
         if: failure()
@@ -668,7 +713,7 @@ jobs:
           path: ${{ inputs.benchmark-artifact-path }}
           if-no-files-found: ignore
       - name: Publish benchmark results
-        if: ${{ inputs.benchmark-publish-branch != '' && inputs.benchmark-publish-job == 'std17-debian11-arm64' && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+        if: ${{ inputs.benchmark-publish-branch != '' && (inputs.benchmark-publish-job == '' || inputs.benchmark-publish-job == 'std17-debian11-arm64') && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
         shell: bash
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
@@ -679,34 +724,49 @@ jobs:
             echo "No benchmark results at $SRC_DIR; skip publish"
             exit 0
           fi
+          JOB_ID="${GITHUB_JOB}"
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          WORK="$RUNNER_TEMP/bench-publish"
-          rm -rf "$WORK"
-          mkdir -p "$WORK"
-          if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
-            git worktree add --force "$WORK" "origin/$PUBLISH_BRANCH"
-          else
-            git worktree add --force --detach "$WORK"
-            (
-              cd "$WORK"
-              git checkout --orphan "$PUBLISH_BRANCH"
-              git rm -rf . >/dev/null 2>&1 || true
-            )
-          fi
-          rm -rf "$WORK/latest"
-          mkdir -p "$WORK/latest"
-          cp -a "$SRC_DIR"/. "$WORK/latest/"
-          cd "$WORK"
-          git add -A
-          if git diff --cached --quiet; then
-            echo "No benchmark publish changes"
-            exit 0
-          fi
-          git commit -m "chore: update benchmark results"
-          git push origin "HEAD:$PUBLISH_BRANCH"
+          WORK="$RUNNER_TEMP/bench-publish-$JOB_ID"
+          attempt=1
+          while [ "$attempt" -le 12 ]; do
+            echo "Publish attempt $attempt for $JOB_ID"
+            rm -rf "$WORK"
+            mkdir -p "$WORK"
+            if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
+              git worktree add --force "$WORK" "FETCH_HEAD"
+            else
+              git worktree add --force --detach "$WORK"
+              (
+                cd "$WORK"
+                git checkout --orphan "$PUBLISH_BRANCH"
+                git rm -rf . >/dev/null 2>&1 || true
+              )
+            fi
+            mkdir -p "$WORK/latest"
+            rm -rf "$WORK/latest/$JOB_ID"
+            mkdir -p "$WORK/latest/$JOB_ID"
+            cp -a "$SRC_DIR"/. "$WORK/latest/$JOB_ID/"
+            cd "$WORK"
+            git add -A
+            if git diff --cached --quiet; then
+              echo "No benchmark publish changes for $JOB_ID"
+              exit 0
+            fi
+            git commit -m "chore: update benchmark results for ${JOB_ID}"
+            if git push origin "HEAD:$PUBLISH_BRANCH"; then
+              echo "Published $JOB_ID to $PUBLISH_BRANCH/latest/$JOB_ID"
+              exit 0
+            fi
+            echo "Push conflict; retrying..."
+            git worktree remove --force "$WORK" 2>/dev/null || rm -rf "$WORK"
+            attempt=$((attempt + 1))
+            sleep $((attempt * 2))
+          done
+          echo "Failed to publish after retries"
+          exit 1
 
       - name: Gather kmpkg logs
         if: failure()
@@ -805,7 +865,7 @@ jobs:
           path: ${{ inputs.benchmark-artifact-path }}
           if-no-files-found: ignore
       - name: Publish benchmark results
-        if: ${{ inputs.benchmark-publish-branch != '' && inputs.benchmark-publish-job == 'std17-centos7-amd64' && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+        if: ${{ inputs.benchmark-publish-branch != '' && (inputs.benchmark-publish-job == '' || inputs.benchmark-publish-job == 'std17-centos7-amd64') && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
         shell: bash
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
@@ -816,34 +876,49 @@ jobs:
             echo "No benchmark results at $SRC_DIR; skip publish"
             exit 0
           fi
+          JOB_ID="${GITHUB_JOB}"
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          WORK="$RUNNER_TEMP/bench-publish"
-          rm -rf "$WORK"
-          mkdir -p "$WORK"
-          if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
-            git worktree add --force "$WORK" "origin/$PUBLISH_BRANCH"
-          else
-            git worktree add --force --detach "$WORK"
-            (
-              cd "$WORK"
-              git checkout --orphan "$PUBLISH_BRANCH"
-              git rm -rf . >/dev/null 2>&1 || true
-            )
-          fi
-          rm -rf "$WORK/latest"
-          mkdir -p "$WORK/latest"
-          cp -a "$SRC_DIR"/. "$WORK/latest/"
-          cd "$WORK"
-          git add -A
-          if git diff --cached --quiet; then
-            echo "No benchmark publish changes"
-            exit 0
-          fi
-          git commit -m "chore: update benchmark results"
-          git push origin "HEAD:$PUBLISH_BRANCH"
+          WORK="$RUNNER_TEMP/bench-publish-$JOB_ID"
+          attempt=1
+          while [ "$attempt" -le 12 ]; do
+            echo "Publish attempt $attempt for $JOB_ID"
+            rm -rf "$WORK"
+            mkdir -p "$WORK"
+            if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
+              git worktree add --force "$WORK" "FETCH_HEAD"
+            else
+              git worktree add --force --detach "$WORK"
+              (
+                cd "$WORK"
+                git checkout --orphan "$PUBLISH_BRANCH"
+                git rm -rf . >/dev/null 2>&1 || true
+              )
+            fi
+            mkdir -p "$WORK/latest"
+            rm -rf "$WORK/latest/$JOB_ID"
+            mkdir -p "$WORK/latest/$JOB_ID"
+            cp -a "$SRC_DIR"/. "$WORK/latest/$JOB_ID/"
+            cd "$WORK"
+            git add -A
+            if git diff --cached --quiet; then
+              echo "No benchmark publish changes for $JOB_ID"
+              exit 0
+            fi
+            git commit -m "chore: update benchmark results for ${JOB_ID}"
+            if git push origin "HEAD:$PUBLISH_BRANCH"; then
+              echo "Published $JOB_ID to $PUBLISH_BRANCH/latest/$JOB_ID"
+              exit 0
+            fi
+            echo "Push conflict; retrying..."
+            git worktree remove --force "$WORK" 2>/dev/null || rm -rf "$WORK"
+            attempt=$((attempt + 1))
+            sleep $((attempt * 2))
+          done
+          echo "Failed to publish after retries"
+          exit 1
 
       - name: Gather kmpkg logs
         if: failure()
@@ -942,7 +1017,7 @@ jobs:
           path: ${{ inputs.benchmark-artifact-path }}
           if-no-files-found: ignore
       - name: Publish benchmark results
-        if: ${{ inputs.benchmark-publish-branch != '' && inputs.benchmark-publish-job == 'std17-centos7-arm64' && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+        if: ${{ inputs.benchmark-publish-branch != '' && (inputs.benchmark-publish-job == '' || inputs.benchmark-publish-job == 'std17-centos7-arm64') && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
         shell: bash
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
@@ -953,34 +1028,49 @@ jobs:
             echo "No benchmark results at $SRC_DIR; skip publish"
             exit 0
           fi
+          JOB_ID="${GITHUB_JOB}"
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          WORK="$RUNNER_TEMP/bench-publish"
-          rm -rf "$WORK"
-          mkdir -p "$WORK"
-          if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
-            git worktree add --force "$WORK" "origin/$PUBLISH_BRANCH"
-          else
-            git worktree add --force --detach "$WORK"
-            (
-              cd "$WORK"
-              git checkout --orphan "$PUBLISH_BRANCH"
-              git rm -rf . >/dev/null 2>&1 || true
-            )
-          fi
-          rm -rf "$WORK/latest"
-          mkdir -p "$WORK/latest"
-          cp -a "$SRC_DIR"/. "$WORK/latest/"
-          cd "$WORK"
-          git add -A
-          if git diff --cached --quiet; then
-            echo "No benchmark publish changes"
-            exit 0
-          fi
-          git commit -m "chore: update benchmark results"
-          git push origin "HEAD:$PUBLISH_BRANCH"
+          WORK="$RUNNER_TEMP/bench-publish-$JOB_ID"
+          attempt=1
+          while [ "$attempt" -le 12 ]; do
+            echo "Publish attempt $attempt for $JOB_ID"
+            rm -rf "$WORK"
+            mkdir -p "$WORK"
+            if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
+              git worktree add --force "$WORK" "FETCH_HEAD"
+            else
+              git worktree add --force --detach "$WORK"
+              (
+                cd "$WORK"
+                git checkout --orphan "$PUBLISH_BRANCH"
+                git rm -rf . >/dev/null 2>&1 || true
+              )
+            fi
+            mkdir -p "$WORK/latest"
+            rm -rf "$WORK/latest/$JOB_ID"
+            mkdir -p "$WORK/latest/$JOB_ID"
+            cp -a "$SRC_DIR"/. "$WORK/latest/$JOB_ID/"
+            cd "$WORK"
+            git add -A
+            if git diff --cached --quiet; then
+              echo "No benchmark publish changes for $JOB_ID"
+              exit 0
+            fi
+            git commit -m "chore: update benchmark results for ${JOB_ID}"
+            if git push origin "HEAD:$PUBLISH_BRANCH"; then
+              echo "Published $JOB_ID to $PUBLISH_BRANCH/latest/$JOB_ID"
+              exit 0
+            fi
+            echo "Push conflict; retrying..."
+            git worktree remove --force "$WORK" 2>/dev/null || rm -rf "$WORK"
+            attempt=$((attempt + 1))
+            sleep $((attempt * 2))
+          done
+          echo "Failed to publish after retries"
+          exit 1
 
       - name: Gather kmpkg logs
         if: failure()
@@ -1080,7 +1170,7 @@ jobs:
           path: ${{ inputs.benchmark-artifact-path }}
           if-no-files-found: ignore
       - name: Publish benchmark results
-        if: ${{ inputs.benchmark-publish-branch != '' && inputs.benchmark-publish-job == 'std20-ubuntu22-amd64' && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+        if: ${{ inputs.benchmark-publish-branch != '' && (inputs.benchmark-publish-job == '' || inputs.benchmark-publish-job == 'std20-ubuntu22-amd64') && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
         shell: bash
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
@@ -1091,34 +1181,49 @@ jobs:
             echo "No benchmark results at $SRC_DIR; skip publish"
             exit 0
           fi
+          JOB_ID="${GITHUB_JOB}"
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          WORK="$RUNNER_TEMP/bench-publish"
-          rm -rf "$WORK"
-          mkdir -p "$WORK"
-          if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
-            git worktree add --force "$WORK" "origin/$PUBLISH_BRANCH"
-          else
-            git worktree add --force --detach "$WORK"
-            (
-              cd "$WORK"
-              git checkout --orphan "$PUBLISH_BRANCH"
-              git rm -rf . >/dev/null 2>&1 || true
-            )
-          fi
-          rm -rf "$WORK/latest"
-          mkdir -p "$WORK/latest"
-          cp -a "$SRC_DIR"/. "$WORK/latest/"
-          cd "$WORK"
-          git add -A
-          if git diff --cached --quiet; then
-            echo "No benchmark publish changes"
-            exit 0
-          fi
-          git commit -m "chore: update benchmark results"
-          git push origin "HEAD:$PUBLISH_BRANCH"
+          WORK="$RUNNER_TEMP/bench-publish-$JOB_ID"
+          attempt=1
+          while [ "$attempt" -le 12 ]; do
+            echo "Publish attempt $attempt for $JOB_ID"
+            rm -rf "$WORK"
+            mkdir -p "$WORK"
+            if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
+              git worktree add --force "$WORK" "FETCH_HEAD"
+            else
+              git worktree add --force --detach "$WORK"
+              (
+                cd "$WORK"
+                git checkout --orphan "$PUBLISH_BRANCH"
+                git rm -rf . >/dev/null 2>&1 || true
+              )
+            fi
+            mkdir -p "$WORK/latest"
+            rm -rf "$WORK/latest/$JOB_ID"
+            mkdir -p "$WORK/latest/$JOB_ID"
+            cp -a "$SRC_DIR"/. "$WORK/latest/$JOB_ID/"
+            cd "$WORK"
+            git add -A
+            if git diff --cached --quiet; then
+              echo "No benchmark publish changes for $JOB_ID"
+              exit 0
+            fi
+            git commit -m "chore: update benchmark results for ${JOB_ID}"
+            if git push origin "HEAD:$PUBLISH_BRANCH"; then
+              echo "Published $JOB_ID to $PUBLISH_BRANCH/latest/$JOB_ID"
+              exit 0
+            fi
+            echo "Push conflict; retrying..."
+            git worktree remove --force "$WORK" 2>/dev/null || rm -rf "$WORK"
+            attempt=$((attempt + 1))
+            sleep $((attempt * 2))
+          done
+          echo "Failed to publish after retries"
+          exit 1
 
       - name: Gather kmpkg logs
         if: failure()
@@ -1218,7 +1323,7 @@ jobs:
           path: ${{ inputs.benchmark-artifact-path }}
           if-no-files-found: ignore
       - name: Publish benchmark results
-        if: ${{ inputs.benchmark-publish-branch != '' && inputs.benchmark-publish-job == 'std20-ubuntu22-arm64' && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+        if: ${{ inputs.benchmark-publish-branch != '' && (inputs.benchmark-publish-job == '' || inputs.benchmark-publish-job == 'std20-ubuntu22-arm64') && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
         shell: bash
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
@@ -1229,34 +1334,49 @@ jobs:
             echo "No benchmark results at $SRC_DIR; skip publish"
             exit 0
           fi
+          JOB_ID="${GITHUB_JOB}"
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          WORK="$RUNNER_TEMP/bench-publish"
-          rm -rf "$WORK"
-          mkdir -p "$WORK"
-          if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
-            git worktree add --force "$WORK" "origin/$PUBLISH_BRANCH"
-          else
-            git worktree add --force --detach "$WORK"
-            (
-              cd "$WORK"
-              git checkout --orphan "$PUBLISH_BRANCH"
-              git rm -rf . >/dev/null 2>&1 || true
-            )
-          fi
-          rm -rf "$WORK/latest"
-          mkdir -p "$WORK/latest"
-          cp -a "$SRC_DIR"/. "$WORK/latest/"
-          cd "$WORK"
-          git add -A
-          if git diff --cached --quiet; then
-            echo "No benchmark publish changes"
-            exit 0
-          fi
-          git commit -m "chore: update benchmark results"
-          git push origin "HEAD:$PUBLISH_BRANCH"
+          WORK="$RUNNER_TEMP/bench-publish-$JOB_ID"
+          attempt=1
+          while [ "$attempt" -le 12 ]; do
+            echo "Publish attempt $attempt for $JOB_ID"
+            rm -rf "$WORK"
+            mkdir -p "$WORK"
+            if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
+              git worktree add --force "$WORK" "FETCH_HEAD"
+            else
+              git worktree add --force --detach "$WORK"
+              (
+                cd "$WORK"
+                git checkout --orphan "$PUBLISH_BRANCH"
+                git rm -rf . >/dev/null 2>&1 || true
+              )
+            fi
+            mkdir -p "$WORK/latest"
+            rm -rf "$WORK/latest/$JOB_ID"
+            mkdir -p "$WORK/latest/$JOB_ID"
+            cp -a "$SRC_DIR"/. "$WORK/latest/$JOB_ID/"
+            cd "$WORK"
+            git add -A
+            if git diff --cached --quiet; then
+              echo "No benchmark publish changes for $JOB_ID"
+              exit 0
+            fi
+            git commit -m "chore: update benchmark results for ${JOB_ID}"
+            if git push origin "HEAD:$PUBLISH_BRANCH"; then
+              echo "Published $JOB_ID to $PUBLISH_BRANCH/latest/$JOB_ID"
+              exit 0
+            fi
+            echo "Push conflict; retrying..."
+            git worktree remove --force "$WORK" 2>/dev/null || rm -rf "$WORK"
+            attempt=$((attempt + 1))
+            sleep $((attempt * 2))
+          done
+          echo "Failed to publish after retries"
+          exit 1
 
       - name: Gather kmpkg logs
         if: failure()
@@ -1356,7 +1476,7 @@ jobs:
           path: ${{ inputs.benchmark-artifact-path }}
           if-no-files-found: ignore
       - name: Publish benchmark results
-        if: ${{ inputs.benchmark-publish-branch != '' && inputs.benchmark-publish-job == 'std20-ubuntu24-amd64' && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+        if: ${{ inputs.benchmark-publish-branch != '' && (inputs.benchmark-publish-job == '' || inputs.benchmark-publish-job == 'std20-ubuntu24-amd64') && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
         shell: bash
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
@@ -1367,34 +1487,49 @@ jobs:
             echo "No benchmark results at $SRC_DIR; skip publish"
             exit 0
           fi
+          JOB_ID="${GITHUB_JOB}"
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          WORK="$RUNNER_TEMP/bench-publish"
-          rm -rf "$WORK"
-          mkdir -p "$WORK"
-          if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
-            git worktree add --force "$WORK" "origin/$PUBLISH_BRANCH"
-          else
-            git worktree add --force --detach "$WORK"
-            (
-              cd "$WORK"
-              git checkout --orphan "$PUBLISH_BRANCH"
-              git rm -rf . >/dev/null 2>&1 || true
-            )
-          fi
-          rm -rf "$WORK/latest"
-          mkdir -p "$WORK/latest"
-          cp -a "$SRC_DIR"/. "$WORK/latest/"
-          cd "$WORK"
-          git add -A
-          if git diff --cached --quiet; then
-            echo "No benchmark publish changes"
-            exit 0
-          fi
-          git commit -m "chore: update benchmark results"
-          git push origin "HEAD:$PUBLISH_BRANCH"
+          WORK="$RUNNER_TEMP/bench-publish-$JOB_ID"
+          attempt=1
+          while [ "$attempt" -le 12 ]; do
+            echo "Publish attempt $attempt for $JOB_ID"
+            rm -rf "$WORK"
+            mkdir -p "$WORK"
+            if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
+              git worktree add --force "$WORK" "FETCH_HEAD"
+            else
+              git worktree add --force --detach "$WORK"
+              (
+                cd "$WORK"
+                git checkout --orphan "$PUBLISH_BRANCH"
+                git rm -rf . >/dev/null 2>&1 || true
+              )
+            fi
+            mkdir -p "$WORK/latest"
+            rm -rf "$WORK/latest/$JOB_ID"
+            mkdir -p "$WORK/latest/$JOB_ID"
+            cp -a "$SRC_DIR"/. "$WORK/latest/$JOB_ID/"
+            cd "$WORK"
+            git add -A
+            if git diff --cached --quiet; then
+              echo "No benchmark publish changes for $JOB_ID"
+              exit 0
+            fi
+            git commit -m "chore: update benchmark results for ${JOB_ID}"
+            if git push origin "HEAD:$PUBLISH_BRANCH"; then
+              echo "Published $JOB_ID to $PUBLISH_BRANCH/latest/$JOB_ID"
+              exit 0
+            fi
+            echo "Push conflict; retrying..."
+            git worktree remove --force "$WORK" 2>/dev/null || rm -rf "$WORK"
+            attempt=$((attempt + 1))
+            sleep $((attempt * 2))
+          done
+          echo "Failed to publish after retries"
+          exit 1
 
       - name: Gather kmpkg logs
         if: failure()
@@ -1494,7 +1629,7 @@ jobs:
           path: ${{ inputs.benchmark-artifact-path }}
           if-no-files-found: ignore
       - name: Publish benchmark results
-        if: ${{ inputs.benchmark-publish-branch != '' && inputs.benchmark-publish-job == 'std20-ubuntu24-arm64' && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+        if: ${{ inputs.benchmark-publish-branch != '' && (inputs.benchmark-publish-job == '' || inputs.benchmark-publish-job == 'std20-ubuntu24-arm64') && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
         shell: bash
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
@@ -1505,34 +1640,49 @@ jobs:
             echo "No benchmark results at $SRC_DIR; skip publish"
             exit 0
           fi
+          JOB_ID="${GITHUB_JOB}"
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          WORK="$RUNNER_TEMP/bench-publish"
-          rm -rf "$WORK"
-          mkdir -p "$WORK"
-          if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
-            git worktree add --force "$WORK" "origin/$PUBLISH_BRANCH"
-          else
-            git worktree add --force --detach "$WORK"
-            (
-              cd "$WORK"
-              git checkout --orphan "$PUBLISH_BRANCH"
-              git rm -rf . >/dev/null 2>&1 || true
-            )
-          fi
-          rm -rf "$WORK/latest"
-          mkdir -p "$WORK/latest"
-          cp -a "$SRC_DIR"/. "$WORK/latest/"
-          cd "$WORK"
-          git add -A
-          if git diff --cached --quiet; then
-            echo "No benchmark publish changes"
-            exit 0
-          fi
-          git commit -m "chore: update benchmark results"
-          git push origin "HEAD:$PUBLISH_BRANCH"
+          WORK="$RUNNER_TEMP/bench-publish-$JOB_ID"
+          attempt=1
+          while [ "$attempt" -le 12 ]; do
+            echo "Publish attempt $attempt for $JOB_ID"
+            rm -rf "$WORK"
+            mkdir -p "$WORK"
+            if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
+              git worktree add --force "$WORK" "FETCH_HEAD"
+            else
+              git worktree add --force --detach "$WORK"
+              (
+                cd "$WORK"
+                git checkout --orphan "$PUBLISH_BRANCH"
+                git rm -rf . >/dev/null 2>&1 || true
+              )
+            fi
+            mkdir -p "$WORK/latest"
+            rm -rf "$WORK/latest/$JOB_ID"
+            mkdir -p "$WORK/latest/$JOB_ID"
+            cp -a "$SRC_DIR"/. "$WORK/latest/$JOB_ID/"
+            cd "$WORK"
+            git add -A
+            if git diff --cached --quiet; then
+              echo "No benchmark publish changes for $JOB_ID"
+              exit 0
+            fi
+            git commit -m "chore: update benchmark results for ${JOB_ID}"
+            if git push origin "HEAD:$PUBLISH_BRANCH"; then
+              echo "Published $JOB_ID to $PUBLISH_BRANCH/latest/$JOB_ID"
+              exit 0
+            fi
+            echo "Push conflict; retrying..."
+            git worktree remove --force "$WORK" 2>/dev/null || rm -rf "$WORK"
+            attempt=$((attempt + 1))
+            sleep $((attempt * 2))
+          done
+          echo "Failed to publish after retries"
+          exit 1
 
       - name: Gather kmpkg logs
         if: failure()
@@ -1632,7 +1782,7 @@ jobs:
           path: ${{ inputs.benchmark-artifact-path }}
           if-no-files-found: ignore
       - name: Publish benchmark results
-        if: ${{ inputs.benchmark-publish-branch != '' && inputs.benchmark-publish-job == 'std20-debian12-amd64' && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+        if: ${{ inputs.benchmark-publish-branch != '' && (inputs.benchmark-publish-job == '' || inputs.benchmark-publish-job == 'std20-debian12-amd64') && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
         shell: bash
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
@@ -1643,34 +1793,49 @@ jobs:
             echo "No benchmark results at $SRC_DIR; skip publish"
             exit 0
           fi
+          JOB_ID="${GITHUB_JOB}"
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          WORK="$RUNNER_TEMP/bench-publish"
-          rm -rf "$WORK"
-          mkdir -p "$WORK"
-          if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
-            git worktree add --force "$WORK" "origin/$PUBLISH_BRANCH"
-          else
-            git worktree add --force --detach "$WORK"
-            (
-              cd "$WORK"
-              git checkout --orphan "$PUBLISH_BRANCH"
-              git rm -rf . >/dev/null 2>&1 || true
-            )
-          fi
-          rm -rf "$WORK/latest"
-          mkdir -p "$WORK/latest"
-          cp -a "$SRC_DIR"/. "$WORK/latest/"
-          cd "$WORK"
-          git add -A
-          if git diff --cached --quiet; then
-            echo "No benchmark publish changes"
-            exit 0
-          fi
-          git commit -m "chore: update benchmark results"
-          git push origin "HEAD:$PUBLISH_BRANCH"
+          WORK="$RUNNER_TEMP/bench-publish-$JOB_ID"
+          attempt=1
+          while [ "$attempt" -le 12 ]; do
+            echo "Publish attempt $attempt for $JOB_ID"
+            rm -rf "$WORK"
+            mkdir -p "$WORK"
+            if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
+              git worktree add --force "$WORK" "FETCH_HEAD"
+            else
+              git worktree add --force --detach "$WORK"
+              (
+                cd "$WORK"
+                git checkout --orphan "$PUBLISH_BRANCH"
+                git rm -rf . >/dev/null 2>&1 || true
+              )
+            fi
+            mkdir -p "$WORK/latest"
+            rm -rf "$WORK/latest/$JOB_ID"
+            mkdir -p "$WORK/latest/$JOB_ID"
+            cp -a "$SRC_DIR"/. "$WORK/latest/$JOB_ID/"
+            cd "$WORK"
+            git add -A
+            if git diff --cached --quiet; then
+              echo "No benchmark publish changes for $JOB_ID"
+              exit 0
+            fi
+            git commit -m "chore: update benchmark results for ${JOB_ID}"
+            if git push origin "HEAD:$PUBLISH_BRANCH"; then
+              echo "Published $JOB_ID to $PUBLISH_BRANCH/latest/$JOB_ID"
+              exit 0
+            fi
+            echo "Push conflict; retrying..."
+            git worktree remove --force "$WORK" 2>/dev/null || rm -rf "$WORK"
+            attempt=$((attempt + 1))
+            sleep $((attempt * 2))
+          done
+          echo "Failed to publish after retries"
+          exit 1
 
       - name: Gather kmpkg logs
         if: failure()
@@ -1770,7 +1935,7 @@ jobs:
           path: ${{ inputs.benchmark-artifact-path }}
           if-no-files-found: ignore
       - name: Publish benchmark results
-        if: ${{ inputs.benchmark-publish-branch != '' && inputs.benchmark-publish-job == 'std20-debian12-arm64' && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+        if: ${{ inputs.benchmark-publish-branch != '' && (inputs.benchmark-publish-job == '' || inputs.benchmark-publish-job == 'std20-debian12-arm64') && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
         shell: bash
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
@@ -1781,34 +1946,49 @@ jobs:
             echo "No benchmark results at $SRC_DIR; skip publish"
             exit 0
           fi
+          JOB_ID="${GITHUB_JOB}"
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          WORK="$RUNNER_TEMP/bench-publish"
-          rm -rf "$WORK"
-          mkdir -p "$WORK"
-          if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
-            git worktree add --force "$WORK" "origin/$PUBLISH_BRANCH"
-          else
-            git worktree add --force --detach "$WORK"
-            (
-              cd "$WORK"
-              git checkout --orphan "$PUBLISH_BRANCH"
-              git rm -rf . >/dev/null 2>&1 || true
-            )
-          fi
-          rm -rf "$WORK/latest"
-          mkdir -p "$WORK/latest"
-          cp -a "$SRC_DIR"/. "$WORK/latest/"
-          cd "$WORK"
-          git add -A
-          if git diff --cached --quiet; then
-            echo "No benchmark publish changes"
-            exit 0
-          fi
-          git commit -m "chore: update benchmark results"
-          git push origin "HEAD:$PUBLISH_BRANCH"
+          WORK="$RUNNER_TEMP/bench-publish-$JOB_ID"
+          attempt=1
+          while [ "$attempt" -le 12 ]; do
+            echo "Publish attempt $attempt for $JOB_ID"
+            rm -rf "$WORK"
+            mkdir -p "$WORK"
+            if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
+              git worktree add --force "$WORK" "FETCH_HEAD"
+            else
+              git worktree add --force --detach "$WORK"
+              (
+                cd "$WORK"
+                git checkout --orphan "$PUBLISH_BRANCH"
+                git rm -rf . >/dev/null 2>&1 || true
+              )
+            fi
+            mkdir -p "$WORK/latest"
+            rm -rf "$WORK/latest/$JOB_ID"
+            mkdir -p "$WORK/latest/$JOB_ID"
+            cp -a "$SRC_DIR"/. "$WORK/latest/$JOB_ID/"
+            cd "$WORK"
+            git add -A
+            if git diff --cached --quiet; then
+              echo "No benchmark publish changes for $JOB_ID"
+              exit 0
+            fi
+            git commit -m "chore: update benchmark results for ${JOB_ID}"
+            if git push origin "HEAD:$PUBLISH_BRANCH"; then
+              echo "Published $JOB_ID to $PUBLISH_BRANCH/latest/$JOB_ID"
+              exit 0
+            fi
+            echo "Push conflict; retrying..."
+            git worktree remove --force "$WORK" 2>/dev/null || rm -rf "$WORK"
+            attempt=$((attempt + 1))
+            sleep $((attempt * 2))
+          done
+          echo "Failed to publish after retries"
+          exit 1
 
       - name: Gather kmpkg logs
         if: failure()
@@ -1907,7 +2087,7 @@ jobs:
           path: ${{ inputs.benchmark-artifact-path }}
           if-no-files-found: ignore
       - name: Publish benchmark results
-        if: ${{ inputs.benchmark-publish-branch != '' && inputs.benchmark-publish-job == 'std20-alpine319-amd64' && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+        if: ${{ inputs.benchmark-publish-branch != '' && (inputs.benchmark-publish-job == '' || inputs.benchmark-publish-job == 'std20-alpine319-amd64') && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
         shell: bash
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
@@ -1918,34 +2098,49 @@ jobs:
             echo "No benchmark results at $SRC_DIR; skip publish"
             exit 0
           fi
+          JOB_ID="${GITHUB_JOB}"
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          WORK="$RUNNER_TEMP/bench-publish"
-          rm -rf "$WORK"
-          mkdir -p "$WORK"
-          if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
-            git worktree add --force "$WORK" "origin/$PUBLISH_BRANCH"
-          else
-            git worktree add --force --detach "$WORK"
-            (
-              cd "$WORK"
-              git checkout --orphan "$PUBLISH_BRANCH"
-              git rm -rf . >/dev/null 2>&1 || true
-            )
-          fi
-          rm -rf "$WORK/latest"
-          mkdir -p "$WORK/latest"
-          cp -a "$SRC_DIR"/. "$WORK/latest/"
-          cd "$WORK"
-          git add -A
-          if git diff --cached --quiet; then
-            echo "No benchmark publish changes"
-            exit 0
-          fi
-          git commit -m "chore: update benchmark results"
-          git push origin "HEAD:$PUBLISH_BRANCH"
+          WORK="$RUNNER_TEMP/bench-publish-$JOB_ID"
+          attempt=1
+          while [ "$attempt" -le 12 ]; do
+            echo "Publish attempt $attempt for $JOB_ID"
+            rm -rf "$WORK"
+            mkdir -p "$WORK"
+            if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
+              git worktree add --force "$WORK" "FETCH_HEAD"
+            else
+              git worktree add --force --detach "$WORK"
+              (
+                cd "$WORK"
+                git checkout --orphan "$PUBLISH_BRANCH"
+                git rm -rf . >/dev/null 2>&1 || true
+              )
+            fi
+            mkdir -p "$WORK/latest"
+            rm -rf "$WORK/latest/$JOB_ID"
+            mkdir -p "$WORK/latest/$JOB_ID"
+            cp -a "$SRC_DIR"/. "$WORK/latest/$JOB_ID/"
+            cd "$WORK"
+            git add -A
+            if git diff --cached --quiet; then
+              echo "No benchmark publish changes for $JOB_ID"
+              exit 0
+            fi
+            git commit -m "chore: update benchmark results for ${JOB_ID}"
+            if git push origin "HEAD:$PUBLISH_BRANCH"; then
+              echo "Published $JOB_ID to $PUBLISH_BRANCH/latest/$JOB_ID"
+              exit 0
+            fi
+            echo "Push conflict; retrying..."
+            git worktree remove --force "$WORK" 2>/dev/null || rm -rf "$WORK"
+            attempt=$((attempt + 1))
+            sleep $((attempt * 2))
+          done
+          echo "Failed to publish after retries"
+          exit 1
 
       - name: Gather kmpkg logs
         if: failure()
@@ -2044,7 +2239,7 @@ jobs:
           path: ${{ inputs.benchmark-artifact-path }}
           if-no-files-found: ignore
       - name: Publish benchmark results
-        if: ${{ inputs.benchmark-publish-branch != '' && inputs.benchmark-publish-job == 'std20-alpine319-arm64' && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+        if: ${{ inputs.benchmark-publish-branch != '' && (inputs.benchmark-publish-job == '' || inputs.benchmark-publish-job == 'std20-alpine319-arm64') && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
         shell: bash
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
@@ -2055,34 +2250,49 @@ jobs:
             echo "No benchmark results at $SRC_DIR; skip publish"
             exit 0
           fi
+          JOB_ID="${GITHUB_JOB}"
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          WORK="$RUNNER_TEMP/bench-publish"
-          rm -rf "$WORK"
-          mkdir -p "$WORK"
-          if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
-            git worktree add --force "$WORK" "origin/$PUBLISH_BRANCH"
-          else
-            git worktree add --force --detach "$WORK"
-            (
-              cd "$WORK"
-              git checkout --orphan "$PUBLISH_BRANCH"
-              git rm -rf . >/dev/null 2>&1 || true
-            )
-          fi
-          rm -rf "$WORK/latest"
-          mkdir -p "$WORK/latest"
-          cp -a "$SRC_DIR"/. "$WORK/latest/"
-          cd "$WORK"
-          git add -A
-          if git diff --cached --quiet; then
-            echo "No benchmark publish changes"
-            exit 0
-          fi
-          git commit -m "chore: update benchmark results"
-          git push origin "HEAD:$PUBLISH_BRANCH"
+          WORK="$RUNNER_TEMP/bench-publish-$JOB_ID"
+          attempt=1
+          while [ "$attempt" -le 12 ]; do
+            echo "Publish attempt $attempt for $JOB_ID"
+            rm -rf "$WORK"
+            mkdir -p "$WORK"
+            if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
+              git worktree add --force "$WORK" "FETCH_HEAD"
+            else
+              git worktree add --force --detach "$WORK"
+              (
+                cd "$WORK"
+                git checkout --orphan "$PUBLISH_BRANCH"
+                git rm -rf . >/dev/null 2>&1 || true
+              )
+            fi
+            mkdir -p "$WORK/latest"
+            rm -rf "$WORK/latest/$JOB_ID"
+            mkdir -p "$WORK/latest/$JOB_ID"
+            cp -a "$SRC_DIR"/. "$WORK/latest/$JOB_ID/"
+            cd "$WORK"
+            git add -A
+            if git diff --cached --quiet; then
+              echo "No benchmark publish changes for $JOB_ID"
+              exit 0
+            fi
+            git commit -m "chore: update benchmark results for ${JOB_ID}"
+            if git push origin "HEAD:$PUBLISH_BRANCH"; then
+              echo "Published $JOB_ID to $PUBLISH_BRANCH/latest/$JOB_ID"
+              exit 0
+            fi
+            echo "Push conflict; retrying..."
+            git worktree remove --force "$WORK" 2>/dev/null || rm -rf "$WORK"
+            attempt=$((attempt + 1))
+            sleep $((attempt * 2))
+          done
+          echo "Failed to publish after retries"
+          exit 1
 
       - name: Gather kmpkg logs
         if: failure()
@@ -2181,7 +2391,7 @@ jobs:
           path: ${{ inputs.benchmark-artifact-path }}
           if-no-files-found: ignore
       - name: Publish benchmark results
-        if: ${{ inputs.benchmark-publish-branch != '' && inputs.benchmark-publish-job == 'std20-alpine320-amd64' && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+        if: ${{ inputs.benchmark-publish-branch != '' && (inputs.benchmark-publish-job == '' || inputs.benchmark-publish-job == 'std20-alpine320-amd64') && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
         shell: bash
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
@@ -2192,34 +2402,49 @@ jobs:
             echo "No benchmark results at $SRC_DIR; skip publish"
             exit 0
           fi
+          JOB_ID="${GITHUB_JOB}"
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          WORK="$RUNNER_TEMP/bench-publish"
-          rm -rf "$WORK"
-          mkdir -p "$WORK"
-          if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
-            git worktree add --force "$WORK" "origin/$PUBLISH_BRANCH"
-          else
-            git worktree add --force --detach "$WORK"
-            (
-              cd "$WORK"
-              git checkout --orphan "$PUBLISH_BRANCH"
-              git rm -rf . >/dev/null 2>&1 || true
-            )
-          fi
-          rm -rf "$WORK/latest"
-          mkdir -p "$WORK/latest"
-          cp -a "$SRC_DIR"/. "$WORK/latest/"
-          cd "$WORK"
-          git add -A
-          if git diff --cached --quiet; then
-            echo "No benchmark publish changes"
-            exit 0
-          fi
-          git commit -m "chore: update benchmark results"
-          git push origin "HEAD:$PUBLISH_BRANCH"
+          WORK="$RUNNER_TEMP/bench-publish-$JOB_ID"
+          attempt=1
+          while [ "$attempt" -le 12 ]; do
+            echo "Publish attempt $attempt for $JOB_ID"
+            rm -rf "$WORK"
+            mkdir -p "$WORK"
+            if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
+              git worktree add --force "$WORK" "FETCH_HEAD"
+            else
+              git worktree add --force --detach "$WORK"
+              (
+                cd "$WORK"
+                git checkout --orphan "$PUBLISH_BRANCH"
+                git rm -rf . >/dev/null 2>&1 || true
+              )
+            fi
+            mkdir -p "$WORK/latest"
+            rm -rf "$WORK/latest/$JOB_ID"
+            mkdir -p "$WORK/latest/$JOB_ID"
+            cp -a "$SRC_DIR"/. "$WORK/latest/$JOB_ID/"
+            cd "$WORK"
+            git add -A
+            if git diff --cached --quiet; then
+              echo "No benchmark publish changes for $JOB_ID"
+              exit 0
+            fi
+            git commit -m "chore: update benchmark results for ${JOB_ID}"
+            if git push origin "HEAD:$PUBLISH_BRANCH"; then
+              echo "Published $JOB_ID to $PUBLISH_BRANCH/latest/$JOB_ID"
+              exit 0
+            fi
+            echo "Push conflict; retrying..."
+            git worktree remove --force "$WORK" 2>/dev/null || rm -rf "$WORK"
+            attempt=$((attempt + 1))
+            sleep $((attempt * 2))
+          done
+          echo "Failed to publish after retries"
+          exit 1
 
       - name: Gather kmpkg logs
         if: failure()
@@ -2318,7 +2543,7 @@ jobs:
           path: ${{ inputs.benchmark-artifact-path }}
           if-no-files-found: ignore
       - name: Publish benchmark results
-        if: ${{ inputs.benchmark-publish-branch != '' && inputs.benchmark-publish-job == 'std20-alpine320-arm64' && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+        if: ${{ inputs.benchmark-publish-branch != '' && (inputs.benchmark-publish-job == '' || inputs.benchmark-publish-job == 'std20-alpine320-arm64') && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
         shell: bash
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
@@ -2329,34 +2554,49 @@ jobs:
             echo "No benchmark results at $SRC_DIR; skip publish"
             exit 0
           fi
+          JOB_ID="${GITHUB_JOB}"
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          WORK="$RUNNER_TEMP/bench-publish"
-          rm -rf "$WORK"
-          mkdir -p "$WORK"
-          if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
-            git worktree add --force "$WORK" "origin/$PUBLISH_BRANCH"
-          else
-            git worktree add --force --detach "$WORK"
-            (
-              cd "$WORK"
-              git checkout --orphan "$PUBLISH_BRANCH"
-              git rm -rf . >/dev/null 2>&1 || true
-            )
-          fi
-          rm -rf "$WORK/latest"
-          mkdir -p "$WORK/latest"
-          cp -a "$SRC_DIR"/. "$WORK/latest/"
-          cd "$WORK"
-          git add -A
-          if git diff --cached --quiet; then
-            echo "No benchmark publish changes"
-            exit 0
-          fi
-          git commit -m "chore: update benchmark results"
-          git push origin "HEAD:$PUBLISH_BRANCH"
+          WORK="$RUNNER_TEMP/bench-publish-$JOB_ID"
+          attempt=1
+          while [ "$attempt" -le 12 ]; do
+            echo "Publish attempt $attempt for $JOB_ID"
+            rm -rf "$WORK"
+            mkdir -p "$WORK"
+            if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
+              git worktree add --force "$WORK" "FETCH_HEAD"
+            else
+              git worktree add --force --detach "$WORK"
+              (
+                cd "$WORK"
+                git checkout --orphan "$PUBLISH_BRANCH"
+                git rm -rf . >/dev/null 2>&1 || true
+              )
+            fi
+            mkdir -p "$WORK/latest"
+            rm -rf "$WORK/latest/$JOB_ID"
+            mkdir -p "$WORK/latest/$JOB_ID"
+            cp -a "$SRC_DIR"/. "$WORK/latest/$JOB_ID/"
+            cd "$WORK"
+            git add -A
+            if git diff --cached --quiet; then
+              echo "No benchmark publish changes for $JOB_ID"
+              exit 0
+            fi
+            git commit -m "chore: update benchmark results for ${JOB_ID}"
+            if git push origin "HEAD:$PUBLISH_BRANCH"; then
+              echo "Published $JOB_ID to $PUBLISH_BRANCH/latest/$JOB_ID"
+              exit 0
+            fi
+            echo "Push conflict; retrying..."
+            git worktree remove --force "$WORK" 2>/dev/null || rm -rf "$WORK"
+            attempt=$((attempt + 1))
+            sleep $((attempt * 2))
+          done
+          echo "Failed to publish after retries"
+          exit 1
 
       - name: Gather kmpkg logs
         if: failure()
@@ -2455,7 +2695,7 @@ jobs:
           path: ${{ inputs.benchmark-artifact-path }}
           if-no-files-found: ignore
       - name: Publish benchmark results
-        if: ${{ inputs.benchmark-publish-branch != '' && inputs.benchmark-publish-job == 'std20-centos9-amd64' && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+        if: ${{ inputs.benchmark-publish-branch != '' && (inputs.benchmark-publish-job == '' || inputs.benchmark-publish-job == 'std20-centos9-amd64') && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
         shell: bash
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
@@ -2466,34 +2706,49 @@ jobs:
             echo "No benchmark results at $SRC_DIR; skip publish"
             exit 0
           fi
+          JOB_ID="${GITHUB_JOB}"
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          WORK="$RUNNER_TEMP/bench-publish"
-          rm -rf "$WORK"
-          mkdir -p "$WORK"
-          if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
-            git worktree add --force "$WORK" "origin/$PUBLISH_BRANCH"
-          else
-            git worktree add --force --detach "$WORK"
-            (
-              cd "$WORK"
-              git checkout --orphan "$PUBLISH_BRANCH"
-              git rm -rf . >/dev/null 2>&1 || true
-            )
-          fi
-          rm -rf "$WORK/latest"
-          mkdir -p "$WORK/latest"
-          cp -a "$SRC_DIR"/. "$WORK/latest/"
-          cd "$WORK"
-          git add -A
-          if git diff --cached --quiet; then
-            echo "No benchmark publish changes"
-            exit 0
-          fi
-          git commit -m "chore: update benchmark results"
-          git push origin "HEAD:$PUBLISH_BRANCH"
+          WORK="$RUNNER_TEMP/bench-publish-$JOB_ID"
+          attempt=1
+          while [ "$attempt" -le 12 ]; do
+            echo "Publish attempt $attempt for $JOB_ID"
+            rm -rf "$WORK"
+            mkdir -p "$WORK"
+            if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
+              git worktree add --force "$WORK" "FETCH_HEAD"
+            else
+              git worktree add --force --detach "$WORK"
+              (
+                cd "$WORK"
+                git checkout --orphan "$PUBLISH_BRANCH"
+                git rm -rf . >/dev/null 2>&1 || true
+              )
+            fi
+            mkdir -p "$WORK/latest"
+            rm -rf "$WORK/latest/$JOB_ID"
+            mkdir -p "$WORK/latest/$JOB_ID"
+            cp -a "$SRC_DIR"/. "$WORK/latest/$JOB_ID/"
+            cd "$WORK"
+            git add -A
+            if git diff --cached --quiet; then
+              echo "No benchmark publish changes for $JOB_ID"
+              exit 0
+            fi
+            git commit -m "chore: update benchmark results for ${JOB_ID}"
+            if git push origin "HEAD:$PUBLISH_BRANCH"; then
+              echo "Published $JOB_ID to $PUBLISH_BRANCH/latest/$JOB_ID"
+              exit 0
+            fi
+            echo "Push conflict; retrying..."
+            git worktree remove --force "$WORK" 2>/dev/null || rm -rf "$WORK"
+            attempt=$((attempt + 1))
+            sleep $((attempt * 2))
+          done
+          echo "Failed to publish after retries"
+          exit 1
 
       - name: Gather kmpkg logs
         if: failure()
@@ -2592,7 +2847,7 @@ jobs:
           path: ${{ inputs.benchmark-artifact-path }}
           if-no-files-found: ignore
       - name: Publish benchmark results
-        if: ${{ inputs.benchmark-publish-branch != '' && inputs.benchmark-publish-job == 'std20-centos9-arm64' && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+        if: ${{ inputs.benchmark-publish-branch != '' && (inputs.benchmark-publish-job == '' || inputs.benchmark-publish-job == 'std20-centos9-arm64') && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
         shell: bash
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
@@ -2603,34 +2858,49 @@ jobs:
             echo "No benchmark results at $SRC_DIR; skip publish"
             exit 0
           fi
+          JOB_ID="${GITHUB_JOB}"
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          WORK="$RUNNER_TEMP/bench-publish"
-          rm -rf "$WORK"
-          mkdir -p "$WORK"
-          if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
-            git worktree add --force "$WORK" "origin/$PUBLISH_BRANCH"
-          else
-            git worktree add --force --detach "$WORK"
-            (
-              cd "$WORK"
-              git checkout --orphan "$PUBLISH_BRANCH"
-              git rm -rf . >/dev/null 2>&1 || true
-            )
-          fi
-          rm -rf "$WORK/latest"
-          mkdir -p "$WORK/latest"
-          cp -a "$SRC_DIR"/. "$WORK/latest/"
-          cd "$WORK"
-          git add -A
-          if git diff --cached --quiet; then
-            echo "No benchmark publish changes"
-            exit 0
-          fi
-          git commit -m "chore: update benchmark results"
-          git push origin "HEAD:$PUBLISH_BRANCH"
+          WORK="$RUNNER_TEMP/bench-publish-$JOB_ID"
+          attempt=1
+          while [ "$attempt" -le 12 ]; do
+            echo "Publish attempt $attempt for $JOB_ID"
+            rm -rf "$WORK"
+            mkdir -p "$WORK"
+            if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
+              git worktree add --force "$WORK" "FETCH_HEAD"
+            else
+              git worktree add --force --detach "$WORK"
+              (
+                cd "$WORK"
+                git checkout --orphan "$PUBLISH_BRANCH"
+                git rm -rf . >/dev/null 2>&1 || true
+              )
+            fi
+            mkdir -p "$WORK/latest"
+            rm -rf "$WORK/latest/$JOB_ID"
+            mkdir -p "$WORK/latest/$JOB_ID"
+            cp -a "$SRC_DIR"/. "$WORK/latest/$JOB_ID/"
+            cd "$WORK"
+            git add -A
+            if git diff --cached --quiet; then
+              echo "No benchmark publish changes for $JOB_ID"
+              exit 0
+            fi
+            git commit -m "chore: update benchmark results for ${JOB_ID}"
+            if git push origin "HEAD:$PUBLISH_BRANCH"; then
+              echo "Published $JOB_ID to $PUBLISH_BRANCH/latest/$JOB_ID"
+              exit 0
+            fi
+            echo "Push conflict; retrying..."
+            git worktree remove --force "$WORK" 2>/dev/null || rm -rf "$WORK"
+            attempt=$((attempt + 1))
+            sleep $((attempt * 2))
+          done
+          echo "Failed to publish after retries"
+          exit 1
 
       - name: Gather kmpkg logs
         if: failure()
@@ -2728,7 +2998,7 @@ jobs:
           path: ${{ inputs.benchmark-artifact-path }}
           if-no-files-found: ignore
       - name: Publish benchmark results
-        if: ${{ inputs.benchmark-publish-branch != '' && inputs.benchmark-publish-job == 'macos-arm64' && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+        if: ${{ inputs.benchmark-publish-branch != '' && (inputs.benchmark-publish-job == '' || inputs.benchmark-publish-job == 'macos-arm64') && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
         shell: bash
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
@@ -2739,34 +3009,49 @@ jobs:
             echo "No benchmark results at $SRC_DIR; skip publish"
             exit 0
           fi
+          JOB_ID="${GITHUB_JOB}"
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          WORK="$RUNNER_TEMP/bench-publish"
-          rm -rf "$WORK"
-          mkdir -p "$WORK"
-          if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
-            git worktree add --force "$WORK" "origin/$PUBLISH_BRANCH"
-          else
-            git worktree add --force --detach "$WORK"
-            (
-              cd "$WORK"
-              git checkout --orphan "$PUBLISH_BRANCH"
-              git rm -rf . >/dev/null 2>&1 || true
-            )
-          fi
-          rm -rf "$WORK/latest"
-          mkdir -p "$WORK/latest"
-          cp -a "$SRC_DIR"/. "$WORK/latest/"
-          cd "$WORK"
-          git add -A
-          if git diff --cached --quiet; then
-            echo "No benchmark publish changes"
-            exit 0
-          fi
-          git commit -m "chore: update benchmark results"
-          git push origin "HEAD:$PUBLISH_BRANCH"
+          WORK="$RUNNER_TEMP/bench-publish-$JOB_ID"
+          attempt=1
+          while [ "$attempt" -le 12 ]; do
+            echo "Publish attempt $attempt for $JOB_ID"
+            rm -rf "$WORK"
+            mkdir -p "$WORK"
+            if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
+              git worktree add --force "$WORK" "FETCH_HEAD"
+            else
+              git worktree add --force --detach "$WORK"
+              (
+                cd "$WORK"
+                git checkout --orphan "$PUBLISH_BRANCH"
+                git rm -rf . >/dev/null 2>&1 || true
+              )
+            fi
+            mkdir -p "$WORK/latest"
+            rm -rf "$WORK/latest/$JOB_ID"
+            mkdir -p "$WORK/latest/$JOB_ID"
+            cp -a "$SRC_DIR"/. "$WORK/latest/$JOB_ID/"
+            cd "$WORK"
+            git add -A
+            if git diff --cached --quiet; then
+              echo "No benchmark publish changes for $JOB_ID"
+              exit 0
+            fi
+            git commit -m "chore: update benchmark results for ${JOB_ID}"
+            if git push origin "HEAD:$PUBLISH_BRANCH"; then
+              echo "Published $JOB_ID to $PUBLISH_BRANCH/latest/$JOB_ID"
+              exit 0
+            fi
+            echo "Push conflict; retrying..."
+            git worktree remove --force "$WORK" 2>/dev/null || rm -rf "$WORK"
+            attempt=$((attempt + 1))
+            sleep $((attempt * 2))
+          done
+          echo "Failed to publish after retries"
+          exit 1
 
       - name: Gather kmpkg logs
         if: failure()
@@ -2864,7 +3149,7 @@ jobs:
           path: ${{ inputs.benchmark-artifact-path }}
           if-no-files-found: ignore
       - name: Publish benchmark results
-        if: ${{ inputs.benchmark-publish-branch != '' && inputs.benchmark-publish-job == 'macos-x86' && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+        if: ${{ inputs.benchmark-publish-branch != '' && (inputs.benchmark-publish-job == '' || inputs.benchmark-publish-job == 'macos-x86') && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
         shell: bash
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
@@ -2875,34 +3160,49 @@ jobs:
             echo "No benchmark results at $SRC_DIR; skip publish"
             exit 0
           fi
+          JOB_ID="${GITHUB_JOB}"
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          WORK="$RUNNER_TEMP/bench-publish"
-          rm -rf "$WORK"
-          mkdir -p "$WORK"
-          if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
-            git worktree add --force "$WORK" "origin/$PUBLISH_BRANCH"
-          else
-            git worktree add --force --detach "$WORK"
-            (
-              cd "$WORK"
-              git checkout --orphan "$PUBLISH_BRANCH"
-              git rm -rf . >/dev/null 2>&1 || true
-            )
-          fi
-          rm -rf "$WORK/latest"
-          mkdir -p "$WORK/latest"
-          cp -a "$SRC_DIR"/. "$WORK/latest/"
-          cd "$WORK"
-          git add -A
-          if git diff --cached --quiet; then
-            echo "No benchmark publish changes"
-            exit 0
-          fi
-          git commit -m "chore: update benchmark results"
-          git push origin "HEAD:$PUBLISH_BRANCH"
+          WORK="$RUNNER_TEMP/bench-publish-$JOB_ID"
+          attempt=1
+          while [ "$attempt" -le 12 ]; do
+            echo "Publish attempt $attempt for $JOB_ID"
+            rm -rf "$WORK"
+            mkdir -p "$WORK"
+            if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
+              git worktree add --force "$WORK" "FETCH_HEAD"
+            else
+              git worktree add --force --detach "$WORK"
+              (
+                cd "$WORK"
+                git checkout --orphan "$PUBLISH_BRANCH"
+                git rm -rf . >/dev/null 2>&1 || true
+              )
+            fi
+            mkdir -p "$WORK/latest"
+            rm -rf "$WORK/latest/$JOB_ID"
+            mkdir -p "$WORK/latest/$JOB_ID"
+            cp -a "$SRC_DIR"/. "$WORK/latest/$JOB_ID/"
+            cd "$WORK"
+            git add -A
+            if git diff --cached --quiet; then
+              echo "No benchmark publish changes for $JOB_ID"
+              exit 0
+            fi
+            git commit -m "chore: update benchmark results for ${JOB_ID}"
+            if git push origin "HEAD:$PUBLISH_BRANCH"; then
+              echo "Published $JOB_ID to $PUBLISH_BRANCH/latest/$JOB_ID"
+              exit 0
+            fi
+            echo "Push conflict; retrying..."
+            git worktree remove --force "$WORK" 2>/dev/null || rm -rf "$WORK"
+            attempt=$((attempt + 1))
+            sleep $((attempt * 2))
+          done
+          echo "Failed to publish after retries"
+          exit 1
 
       - name: Gather kmpkg logs
         if: failure()
@@ -3010,7 +3310,7 @@ jobs:
           path: ${{ inputs.benchmark-artifact-path }}
           if-no-files-found: ignore
       - name: Publish benchmark results
-        if: ${{ inputs.benchmark-publish-branch != '' && inputs.benchmark-publish-job == 'windows' && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+        if: ${{ inputs.benchmark-publish-branch != '' && (inputs.benchmark-publish-job == '' || inputs.benchmark-publish-job == 'windows') && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
         shell: bash
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
@@ -3021,34 +3321,49 @@ jobs:
             echo "No benchmark results at $SRC_DIR; skip publish"
             exit 0
           fi
+          JOB_ID="${GITHUB_JOB}"
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          WORK="$RUNNER_TEMP/bench-publish"
-          rm -rf "$WORK"
-          mkdir -p "$WORK"
-          if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
-            git worktree add --force "$WORK" "origin/$PUBLISH_BRANCH"
-          else
-            git worktree add --force --detach "$WORK"
-            (
-              cd "$WORK"
-              git checkout --orphan "$PUBLISH_BRANCH"
-              git rm -rf . >/dev/null 2>&1 || true
-            )
-          fi
-          rm -rf "$WORK/latest"
-          mkdir -p "$WORK/latest"
-          cp -a "$SRC_DIR"/. "$WORK/latest/"
-          cd "$WORK"
-          git add -A
-          if git diff --cached --quiet; then
-            echo "No benchmark publish changes"
-            exit 0
-          fi
-          git commit -m "chore: update benchmark results"
-          git push origin "HEAD:$PUBLISH_BRANCH"
+          WORK="$RUNNER_TEMP/bench-publish-$JOB_ID"
+          attempt=1
+          while [ "$attempt" -le 12 ]; do
+            echo "Publish attempt $attempt for $JOB_ID"
+            rm -rf "$WORK"
+            mkdir -p "$WORK"
+            if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
+              git worktree add --force "$WORK" "FETCH_HEAD"
+            else
+              git worktree add --force --detach "$WORK"
+              (
+                cd "$WORK"
+                git checkout --orphan "$PUBLISH_BRANCH"
+                git rm -rf . >/dev/null 2>&1 || true
+              )
+            fi
+            mkdir -p "$WORK/latest"
+            rm -rf "$WORK/latest/$JOB_ID"
+            mkdir -p "$WORK/latest/$JOB_ID"
+            cp -a "$SRC_DIR"/. "$WORK/latest/$JOB_ID/"
+            cd "$WORK"
+            git add -A
+            if git diff --cached --quiet; then
+              echo "No benchmark publish changes for $JOB_ID"
+              exit 0
+            fi
+            git commit -m "chore: update benchmark results for ${JOB_ID}"
+            if git push origin "HEAD:$PUBLISH_BRANCH"; then
+              echo "Published $JOB_ID to $PUBLISH_BRANCH/latest/$JOB_ID"
+              exit 0
+            fi
+            echo "Push conflict; retrying..."
+            git worktree remove --force "$WORK" 2>/dev/null || rm -rf "$WORK"
+            attempt=$((attempt + 1))
+            sleep $((attempt * 2))
+          done
+          echo "Failed to publish after retries"
+          exit 1
 
       - name: Gather kmpkg logs
         if: failure()
@@ -3161,7 +3476,7 @@ jobs:
           path: ${{ inputs.benchmark-artifact-path }}
           if-no-files-found: ignore
       - name: Publish benchmark results
-        if: ${{ inputs.benchmark-publish-branch != '' && inputs.benchmark-publish-job == 'windows-arm64' && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+        if: ${{ inputs.benchmark-publish-branch != '' && (inputs.benchmark-publish-job == '' || inputs.benchmark-publish-job == 'windows-arm64') && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
         shell: bash
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
@@ -3172,34 +3487,49 @@ jobs:
             echo "No benchmark results at $SRC_DIR; skip publish"
             exit 0
           fi
+          JOB_ID="${GITHUB_JOB}"
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          WORK="$RUNNER_TEMP/bench-publish"
-          rm -rf "$WORK"
-          mkdir -p "$WORK"
-          if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
-            git worktree add --force "$WORK" "origin/$PUBLISH_BRANCH"
-          else
-            git worktree add --force --detach "$WORK"
-            (
-              cd "$WORK"
-              git checkout --orphan "$PUBLISH_BRANCH"
-              git rm -rf . >/dev/null 2>&1 || true
-            )
-          fi
-          rm -rf "$WORK/latest"
-          mkdir -p "$WORK/latest"
-          cp -a "$SRC_DIR"/. "$WORK/latest/"
-          cd "$WORK"
-          git add -A
-          if git diff --cached --quiet; then
-            echo "No benchmark publish changes"
-            exit 0
-          fi
-          git commit -m "chore: update benchmark results"
-          git push origin "HEAD:$PUBLISH_BRANCH"
+          WORK="$RUNNER_TEMP/bench-publish-$JOB_ID"
+          attempt=1
+          while [ "$attempt" -le 12 ]; do
+            echo "Publish attempt $attempt for $JOB_ID"
+            rm -rf "$WORK"
+            mkdir -p "$WORK"
+            if git fetch --depth 1 origin "$PUBLISH_BRANCH"; then
+              git worktree add --force "$WORK" "FETCH_HEAD"
+            else
+              git worktree add --force --detach "$WORK"
+              (
+                cd "$WORK"
+                git checkout --orphan "$PUBLISH_BRANCH"
+                git rm -rf . >/dev/null 2>&1 || true
+              )
+            fi
+            mkdir -p "$WORK/latest"
+            rm -rf "$WORK/latest/$JOB_ID"
+            mkdir -p "$WORK/latest/$JOB_ID"
+            cp -a "$SRC_DIR"/. "$WORK/latest/$JOB_ID/"
+            cd "$WORK"
+            git add -A
+            if git diff --cached --quiet; then
+              echo "No benchmark publish changes for $JOB_ID"
+              exit 0
+            fi
+            git commit -m "chore: update benchmark results for ${JOB_ID}"
+            if git push origin "HEAD:$PUBLISH_BRANCH"; then
+              echo "Published $JOB_ID to $PUBLISH_BRANCH/latest/$JOB_ID"
+              exit 0
+            fi
+            echo "Push conflict; retrying..."
+            git worktree remove --force "$WORK" 2>/dev/null || rm -rf "$WORK"
+            attempt=$((attempt + 1))
+            sleep $((attempt * 2))
+          done
+          echo "Failed to publish after retries"
+          exit 1
 
       - name: Gather kmpkg logs
         if: failure()
