@@ -18,8 +18,9 @@ jobs:
       enable-std17-ubuntu20-arm64: true
       enable-std17-debian11-amd64: true
       enable-std17-debian11-arm64: true
-      enable-std17-centos7-amd64: true
-      enable-std17-centos7-arm64: true
+      # CentOS 7: EOL + Actions/glibc friction; keep template jobs, skip in self-test
+      enable-std17-centos7-amd64: false
+      enable-std17-centos7-arm64: false
       enable-std20-ubuntu22-amd64: true
       enable-std20-ubuntu22-arm64: true
       enable-std20-ubuntu24-amd64: true
