@@ -32,7 +32,7 @@ on:
         type: string
         default: 'benchmark-results/'
       benchmark-publish-branch:
-        description: 'If set, publish results to this branch under latest/'
+        description: 'If set, publish results to this branch under latest/<job-id>/'
         required: false
         type: string
         default: ''
@@ -203,16 +203,6 @@ jobs:
                   echo "  $tool: NOT FOUND"
               fi
           done
-          if [ "$(uname)" = "Darwin" ]; then
-              echo "  sw_vers: $(sw_vers -productVersion 2>/dev/null || echo unknown)"
-              for tool in xcodebuild autoconf automake libtool pkg-config; do
-                  if command -v $tool &>/dev/null; then
-                      echo "  $tool: $(command -v $tool)  ($($tool --version 2>&1 | head -1))"
-                  else
-                      echo "  $tool: NOT FOUND"
-                  fi
-              done
-          fi
           for cc in gcc g++ clang clang++ cc c++; do
               if command -v $cc &>/dev/null; then
                   echo "  $($cc --version 2>&1 | head -1)"
@@ -230,9 +220,9 @@ jobs:
         run: |
           git clone --depth 1 https://github.com/kumose/kmpkgcore.git /tmp/kmpkgcore
           /tmp/kmpkgcore/kmpkgctl bootstrap --disable-metrics
-          echo "KMPKG_HOME=/tmp/kmpkgcore" >> $GITHUB_ENV
-          echo "KMPKG_CMAKE=/tmp/kmpkgcore/scripts/buildsystems/kmpkg.cmake" >> $GITHUB_ENV
-          echo "KMPKG_FORCE_SYSTEM_BINARIES=1" >> $GITHUB_ENV
+          echo "KMPKG_HOME=/tmp/kmpkgcore" >> "$GITHUB_ENV"
+          echo "KMPKG_CMAKE=/tmp/kmpkgcore/scripts/buildsystems/kmpkg.cmake" >> "$GITHUB_ENV"
+          echo "KMPKG_FORCE_SYSTEM_BINARIES=1" >> "$GITHUB_ENV"
       - name: Configure
         run: ${{ inputs.config-command }}
       - name: Build
@@ -259,6 +249,8 @@ jobs:
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
           SRC_DIR: ${{ inputs.benchmark-artifact-path }}
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
           if [ ! -d "$SRC_DIR" ]; then
@@ -308,7 +300,6 @@ jobs:
           done
           echo "Failed to publish after retries"
           exit 1
-
       - name: Gather kmpkg logs
         if: failure()
         run: |
@@ -331,6 +322,7 @@ jobs:
             build/Testing/Temporary/
             build/kmpkg-logs/
           if-no-files-found: ignore
+
 
   std17-ubuntu20-arm64:
     if: ${{ inputs.enable-std17-ubuntu20-arm64 }}
@@ -356,16 +348,6 @@ jobs:
                   echo "  $tool: NOT FOUND"
               fi
           done
-          if [ "$(uname)" = "Darwin" ]; then
-              echo "  sw_vers: $(sw_vers -productVersion 2>/dev/null || echo unknown)"
-              for tool in xcodebuild autoconf automake libtool pkg-config; do
-                  if command -v $tool &>/dev/null; then
-                      echo "  $tool: $(command -v $tool)  ($($tool --version 2>&1 | head -1))"
-                  else
-                      echo "  $tool: NOT FOUND"
-                  fi
-              done
-          fi
           for cc in gcc g++ clang clang++ cc c++; do
               if command -v $cc &>/dev/null; then
                   echo "  $($cc --version 2>&1 | head -1)"
@@ -383,9 +365,9 @@ jobs:
         run: |
           git clone --depth 1 https://github.com/kumose/kmpkgcore.git /tmp/kmpkgcore
           /tmp/kmpkgcore/kmpkgctl bootstrap --disable-metrics
-          echo "KMPKG_HOME=/tmp/kmpkgcore" >> $GITHUB_ENV
-          echo "KMPKG_CMAKE=/tmp/kmpkgcore/scripts/buildsystems/kmpkg.cmake" >> $GITHUB_ENV
-          echo "KMPKG_FORCE_SYSTEM_BINARIES=1" >> $GITHUB_ENV
+          echo "KMPKG_HOME=/tmp/kmpkgcore" >> "$GITHUB_ENV"
+          echo "KMPKG_CMAKE=/tmp/kmpkgcore/scripts/buildsystems/kmpkg.cmake" >> "$GITHUB_ENV"
+          echo "KMPKG_FORCE_SYSTEM_BINARIES=1" >> "$GITHUB_ENV"
       - name: Configure
         run: ${{ inputs.config-command }}
       - name: Build
@@ -412,6 +394,8 @@ jobs:
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
           SRC_DIR: ${{ inputs.benchmark-artifact-path }}
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
           if [ ! -d "$SRC_DIR" ]; then
@@ -461,7 +445,6 @@ jobs:
           done
           echo "Failed to publish after retries"
           exit 1
-
       - name: Gather kmpkg logs
         if: failure()
         run: |
@@ -484,6 +467,7 @@ jobs:
             build/Testing/Temporary/
             build/kmpkg-logs/
           if-no-files-found: ignore
+
 
   std17-debian11-amd64:
     if: ${{ inputs.enable-std17-debian11-amd64 }}
@@ -509,16 +493,6 @@ jobs:
                   echo "  $tool: NOT FOUND"
               fi
           done
-          if [ "$(uname)" = "Darwin" ]; then
-              echo "  sw_vers: $(sw_vers -productVersion 2>/dev/null || echo unknown)"
-              for tool in xcodebuild autoconf automake libtool pkg-config; do
-                  if command -v $tool &>/dev/null; then
-                      echo "  $tool: $(command -v $tool)  ($($tool --version 2>&1 | head -1))"
-                  else
-                      echo "  $tool: NOT FOUND"
-                  fi
-              done
-          fi
           for cc in gcc g++ clang clang++ cc c++; do
               if command -v $cc &>/dev/null; then
                   echo "  $($cc --version 2>&1 | head -1)"
@@ -536,9 +510,9 @@ jobs:
         run: |
           git clone --depth 1 https://github.com/kumose/kmpkgcore.git /tmp/kmpkgcore
           /tmp/kmpkgcore/kmpkgctl bootstrap --disable-metrics
-          echo "KMPKG_HOME=/tmp/kmpkgcore" >> $GITHUB_ENV
-          echo "KMPKG_CMAKE=/tmp/kmpkgcore/scripts/buildsystems/kmpkg.cmake" >> $GITHUB_ENV
-          echo "KMPKG_FORCE_SYSTEM_BINARIES=1" >> $GITHUB_ENV
+          echo "KMPKG_HOME=/tmp/kmpkgcore" >> "$GITHUB_ENV"
+          echo "KMPKG_CMAKE=/tmp/kmpkgcore/scripts/buildsystems/kmpkg.cmake" >> "$GITHUB_ENV"
+          echo "KMPKG_FORCE_SYSTEM_BINARIES=1" >> "$GITHUB_ENV"
       - name: Configure
         run: ${{ inputs.config-command }}
       - name: Build
@@ -565,6 +539,8 @@ jobs:
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
           SRC_DIR: ${{ inputs.benchmark-artifact-path }}
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
           if [ ! -d "$SRC_DIR" ]; then
@@ -614,7 +590,6 @@ jobs:
           done
           echo "Failed to publish after retries"
           exit 1
-
       - name: Gather kmpkg logs
         if: failure()
         run: |
@@ -637,6 +612,7 @@ jobs:
             build/Testing/Temporary/
             build/kmpkg-logs/
           if-no-files-found: ignore
+
 
   std17-debian11-arm64:
     if: ${{ inputs.enable-std17-debian11-arm64 }}
@@ -662,16 +638,6 @@ jobs:
                   echo "  $tool: NOT FOUND"
               fi
           done
-          if [ "$(uname)" = "Darwin" ]; then
-              echo "  sw_vers: $(sw_vers -productVersion 2>/dev/null || echo unknown)"
-              for tool in xcodebuild autoconf automake libtool pkg-config; do
-                  if command -v $tool &>/dev/null; then
-                      echo "  $tool: $(command -v $tool)  ($($tool --version 2>&1 | head -1))"
-                  else
-                      echo "  $tool: NOT FOUND"
-                  fi
-              done
-          fi
           for cc in gcc g++ clang clang++ cc c++; do
               if command -v $cc &>/dev/null; then
                   echo "  $($cc --version 2>&1 | head -1)"
@@ -689,9 +655,9 @@ jobs:
         run: |
           git clone --depth 1 https://github.com/kumose/kmpkgcore.git /tmp/kmpkgcore
           /tmp/kmpkgcore/kmpkgctl bootstrap --disable-metrics
-          echo "KMPKG_HOME=/tmp/kmpkgcore" >> $GITHUB_ENV
-          echo "KMPKG_CMAKE=/tmp/kmpkgcore/scripts/buildsystems/kmpkg.cmake" >> $GITHUB_ENV
-          echo "KMPKG_FORCE_SYSTEM_BINARIES=1" >> $GITHUB_ENV
+          echo "KMPKG_HOME=/tmp/kmpkgcore" >> "$GITHUB_ENV"
+          echo "KMPKG_CMAKE=/tmp/kmpkgcore/scripts/buildsystems/kmpkg.cmake" >> "$GITHUB_ENV"
+          echo "KMPKG_FORCE_SYSTEM_BINARIES=1" >> "$GITHUB_ENV"
       - name: Configure
         run: ${{ inputs.config-command }}
       - name: Build
@@ -718,6 +684,8 @@ jobs:
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
           SRC_DIR: ${{ inputs.benchmark-artifact-path }}
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
           if [ ! -d "$SRC_DIR" ]; then
@@ -767,7 +735,6 @@ jobs:
           done
           echo "Failed to publish after retries"
           exit 1
-
       - name: Gather kmpkg logs
         if: failure()
         run: |
@@ -791,9 +758,13 @@ jobs:
             build/kmpkg-logs/
           if-no-files-found: ignore
 
+
   std17-centos7-amd64:
     if: ${{ inputs.enable-std17-centos7-amd64 }}
     runs-on: ubuntu-latest
+    env:
+      ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE_20: true
     container: ghcr.io/koomx/kumo-std17-centos7-amd64:latest
     steps:
       - uses: actions/checkout@v4
@@ -815,16 +786,6 @@ jobs:
                   echo "  $tool: NOT FOUND"
               fi
           done
-          if [ "$(uname)" = "Darwin" ]; then
-              echo "  sw_vers: $(sw_vers -productVersion 2>/dev/null || echo unknown)"
-              for tool in xcodebuild autoconf automake libtool pkg-config; do
-                  if command -v $tool &>/dev/null; then
-                      echo "  $tool: $(command -v $tool)  ($($tool --version 2>&1 | head -1))"
-                  else
-                      echo "  $tool: NOT FOUND"
-                  fi
-              done
-          fi
           for cc in gcc g++ clang clang++ cc c++; do
               if command -v $cc &>/dev/null; then
                   echo "  $($cc --version 2>&1 | head -1)"
@@ -841,9 +802,9 @@ jobs:
         run: |
           git clone --depth 1 https://github.com/kumose/kmpkgcore.git /tmp/kmpkgcore
           /tmp/kmpkgcore/kmpkgctl bootstrap --disable-metrics
-          echo "KMPKG_HOME=/tmp/kmpkgcore" >> $GITHUB_ENV
-          echo "KMPKG_CMAKE=/tmp/kmpkgcore/scripts/buildsystems/kmpkg.cmake" >> $GITHUB_ENV
-          echo "KMPKG_FORCE_SYSTEM_BINARIES=1" >> $GITHUB_ENV
+          echo "KMPKG_HOME=/tmp/kmpkgcore" >> "$GITHUB_ENV"
+          echo "KMPKG_CMAKE=/tmp/kmpkgcore/scripts/buildsystems/kmpkg.cmake" >> "$GITHUB_ENV"
+          echo "KMPKG_FORCE_SYSTEM_BINARIES=1" >> "$GITHUB_ENV"
       - name: Configure
         run: ${{ inputs.config-command }}
       - name: Build
@@ -870,6 +831,8 @@ jobs:
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
           SRC_DIR: ${{ inputs.benchmark-artifact-path }}
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
           if [ ! -d "$SRC_DIR" ]; then
@@ -919,7 +882,6 @@ jobs:
           done
           echo "Failed to publish after retries"
           exit 1
-
       - name: Gather kmpkg logs
         if: failure()
         run: |
@@ -943,9 +905,13 @@ jobs:
             build/kmpkg-logs/
           if-no-files-found: ignore
 
+
   std17-centos7-arm64:
     if: ${{ inputs.enable-std17-centos7-arm64 }}
     runs-on: ubuntu-24.04-arm
+    env:
+      ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE_20: true
     container: ghcr.io/koomx/kumo-std17-centos7-arm64:latest
     steps:
       - uses: actions/checkout@v4
@@ -967,16 +933,6 @@ jobs:
                   echo "  $tool: NOT FOUND"
               fi
           done
-          if [ "$(uname)" = "Darwin" ]; then
-              echo "  sw_vers: $(sw_vers -productVersion 2>/dev/null || echo unknown)"
-              for tool in xcodebuild autoconf automake libtool pkg-config; do
-                  if command -v $tool &>/dev/null; then
-                      echo "  $tool: $(command -v $tool)  ($($tool --version 2>&1 | head -1))"
-                  else
-                      echo "  $tool: NOT FOUND"
-                  fi
-              done
-          fi
           for cc in gcc g++ clang clang++ cc c++; do
               if command -v $cc &>/dev/null; then
                   echo "  $($cc --version 2>&1 | head -1)"
@@ -993,9 +949,9 @@ jobs:
         run: |
           git clone --depth 1 https://github.com/kumose/kmpkgcore.git /tmp/kmpkgcore
           /tmp/kmpkgcore/kmpkgctl bootstrap --disable-metrics
-          echo "KMPKG_HOME=/tmp/kmpkgcore" >> $GITHUB_ENV
-          echo "KMPKG_CMAKE=/tmp/kmpkgcore/scripts/buildsystems/kmpkg.cmake" >> $GITHUB_ENV
-          echo "KMPKG_FORCE_SYSTEM_BINARIES=1" >> $GITHUB_ENV
+          echo "KMPKG_HOME=/tmp/kmpkgcore" >> "$GITHUB_ENV"
+          echo "KMPKG_CMAKE=/tmp/kmpkgcore/scripts/buildsystems/kmpkg.cmake" >> "$GITHUB_ENV"
+          echo "KMPKG_FORCE_SYSTEM_BINARIES=1" >> "$GITHUB_ENV"
       - name: Configure
         run: ${{ inputs.config-command }}
       - name: Build
@@ -1022,6 +978,8 @@ jobs:
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
           SRC_DIR: ${{ inputs.benchmark-artifact-path }}
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
           if [ ! -d "$SRC_DIR" ]; then
@@ -1071,7 +1029,6 @@ jobs:
           done
           echo "Failed to publish after retries"
           exit 1
-
       - name: Gather kmpkg logs
         if: failure()
         run: |
@@ -1094,6 +1051,7 @@ jobs:
             build/Testing/Temporary/
             build/kmpkg-logs/
           if-no-files-found: ignore
+
 
   std20-ubuntu22-amd64:
     if: ${{ inputs.enable-std20-ubuntu22-amd64 }}
@@ -1119,16 +1077,6 @@ jobs:
                   echo "  $tool: NOT FOUND"
               fi
           done
-          if [ "$(uname)" = "Darwin" ]; then
-              echo "  sw_vers: $(sw_vers -productVersion 2>/dev/null || echo unknown)"
-              for tool in xcodebuild autoconf automake libtool pkg-config; do
-                  if command -v $tool &>/dev/null; then
-                      echo "  $tool: $(command -v $tool)  ($($tool --version 2>&1 | head -1))"
-                  else
-                      echo "  $tool: NOT FOUND"
-                  fi
-              done
-          fi
           for cc in gcc g++ clang clang++ cc c++; do
               if command -v $cc &>/dev/null; then
                   echo "  $($cc --version 2>&1 | head -1)"
@@ -1146,9 +1094,9 @@ jobs:
         run: |
           git clone --depth 1 https://github.com/kumose/kmpkgcore.git /tmp/kmpkgcore
           /tmp/kmpkgcore/kmpkgctl bootstrap --disable-metrics
-          echo "KMPKG_HOME=/tmp/kmpkgcore" >> $GITHUB_ENV
-          echo "KMPKG_CMAKE=/tmp/kmpkgcore/scripts/buildsystems/kmpkg.cmake" >> $GITHUB_ENV
-          echo "KMPKG_FORCE_SYSTEM_BINARIES=1" >> $GITHUB_ENV
+          echo "KMPKG_HOME=/tmp/kmpkgcore" >> "$GITHUB_ENV"
+          echo "KMPKG_CMAKE=/tmp/kmpkgcore/scripts/buildsystems/kmpkg.cmake" >> "$GITHUB_ENV"
+          echo "KMPKG_FORCE_SYSTEM_BINARIES=1" >> "$GITHUB_ENV"
       - name: Configure
         run: ${{ inputs.config-command }}
       - name: Build
@@ -1175,6 +1123,8 @@ jobs:
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
           SRC_DIR: ${{ inputs.benchmark-artifact-path }}
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
           if [ ! -d "$SRC_DIR" ]; then
@@ -1224,7 +1174,6 @@ jobs:
           done
           echo "Failed to publish after retries"
           exit 1
-
       - name: Gather kmpkg logs
         if: failure()
         run: |
@@ -1247,6 +1196,7 @@ jobs:
             build/Testing/Temporary/
             build/kmpkg-logs/
           if-no-files-found: ignore
+
 
   std20-ubuntu22-arm64:
     if: ${{ inputs.enable-std20-ubuntu22-arm64 }}
@@ -1272,16 +1222,6 @@ jobs:
                   echo "  $tool: NOT FOUND"
               fi
           done
-          if [ "$(uname)" = "Darwin" ]; then
-              echo "  sw_vers: $(sw_vers -productVersion 2>/dev/null || echo unknown)"
-              for tool in xcodebuild autoconf automake libtool pkg-config; do
-                  if command -v $tool &>/dev/null; then
-                      echo "  $tool: $(command -v $tool)  ($($tool --version 2>&1 | head -1))"
-                  else
-                      echo "  $tool: NOT FOUND"
-                  fi
-              done
-          fi
           for cc in gcc g++ clang clang++ cc c++; do
               if command -v $cc &>/dev/null; then
                   echo "  $($cc --version 2>&1 | head -1)"
@@ -1299,9 +1239,9 @@ jobs:
         run: |
           git clone --depth 1 https://github.com/kumose/kmpkgcore.git /tmp/kmpkgcore
           /tmp/kmpkgcore/kmpkgctl bootstrap --disable-metrics
-          echo "KMPKG_HOME=/tmp/kmpkgcore" >> $GITHUB_ENV
-          echo "KMPKG_CMAKE=/tmp/kmpkgcore/scripts/buildsystems/kmpkg.cmake" >> $GITHUB_ENV
-          echo "KMPKG_FORCE_SYSTEM_BINARIES=1" >> $GITHUB_ENV
+          echo "KMPKG_HOME=/tmp/kmpkgcore" >> "$GITHUB_ENV"
+          echo "KMPKG_CMAKE=/tmp/kmpkgcore/scripts/buildsystems/kmpkg.cmake" >> "$GITHUB_ENV"
+          echo "KMPKG_FORCE_SYSTEM_BINARIES=1" >> "$GITHUB_ENV"
       - name: Configure
         run: ${{ inputs.config-command }}
       - name: Build
@@ -1328,6 +1268,8 @@ jobs:
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
           SRC_DIR: ${{ inputs.benchmark-artifact-path }}
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
           if [ ! -d "$SRC_DIR" ]; then
@@ -1377,7 +1319,6 @@ jobs:
           done
           echo "Failed to publish after retries"
           exit 1
-
       - name: Gather kmpkg logs
         if: failure()
         run: |
@@ -1400,6 +1341,7 @@ jobs:
             build/Testing/Temporary/
             build/kmpkg-logs/
           if-no-files-found: ignore
+
 
   std20-ubuntu24-amd64:
     if: ${{ inputs.enable-std20-ubuntu24-amd64 }}
@@ -1425,16 +1367,6 @@ jobs:
                   echo "  $tool: NOT FOUND"
               fi
           done
-          if [ "$(uname)" = "Darwin" ]; then
-              echo "  sw_vers: $(sw_vers -productVersion 2>/dev/null || echo unknown)"
-              for tool in xcodebuild autoconf automake libtool pkg-config; do
-                  if command -v $tool &>/dev/null; then
-                      echo "  $tool: $(command -v $tool)  ($($tool --version 2>&1 | head -1))"
-                  else
-                      echo "  $tool: NOT FOUND"
-                  fi
-              done
-          fi
           for cc in gcc g++ clang clang++ cc c++; do
               if command -v $cc &>/dev/null; then
                   echo "  $($cc --version 2>&1 | head -1)"
@@ -1452,9 +1384,9 @@ jobs:
         run: |
           git clone --depth 1 https://github.com/kumose/kmpkgcore.git /tmp/kmpkgcore
           /tmp/kmpkgcore/kmpkgctl bootstrap --disable-metrics
-          echo "KMPKG_HOME=/tmp/kmpkgcore" >> $GITHUB_ENV
-          echo "KMPKG_CMAKE=/tmp/kmpkgcore/scripts/buildsystems/kmpkg.cmake" >> $GITHUB_ENV
-          echo "KMPKG_FORCE_SYSTEM_BINARIES=1" >> $GITHUB_ENV
+          echo "KMPKG_HOME=/tmp/kmpkgcore" >> "$GITHUB_ENV"
+          echo "KMPKG_CMAKE=/tmp/kmpkgcore/scripts/buildsystems/kmpkg.cmake" >> "$GITHUB_ENV"
+          echo "KMPKG_FORCE_SYSTEM_BINARIES=1" >> "$GITHUB_ENV"
       - name: Configure
         run: ${{ inputs.config-command }}
       - name: Build
@@ -1481,6 +1413,8 @@ jobs:
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
           SRC_DIR: ${{ inputs.benchmark-artifact-path }}
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
           if [ ! -d "$SRC_DIR" ]; then
@@ -1530,7 +1464,6 @@ jobs:
           done
           echo "Failed to publish after retries"
           exit 1
-
       - name: Gather kmpkg logs
         if: failure()
         run: |
@@ -1553,6 +1486,7 @@ jobs:
             build/Testing/Temporary/
             build/kmpkg-logs/
           if-no-files-found: ignore
+
 
   std20-ubuntu24-arm64:
     if: ${{ inputs.enable-std20-ubuntu24-arm64 }}
@@ -1578,16 +1512,6 @@ jobs:
                   echo "  $tool: NOT FOUND"
               fi
           done
-          if [ "$(uname)" = "Darwin" ]; then
-              echo "  sw_vers: $(sw_vers -productVersion 2>/dev/null || echo unknown)"
-              for tool in xcodebuild autoconf automake libtool pkg-config; do
-                  if command -v $tool &>/dev/null; then
-                      echo "  $tool: $(command -v $tool)  ($($tool --version 2>&1 | head -1))"
-                  else
-                      echo "  $tool: NOT FOUND"
-                  fi
-              done
-          fi
           for cc in gcc g++ clang clang++ cc c++; do
               if command -v $cc &>/dev/null; then
                   echo "  $($cc --version 2>&1 | head -1)"
@@ -1605,9 +1529,9 @@ jobs:
         run: |
           git clone --depth 1 https://github.com/kumose/kmpkgcore.git /tmp/kmpkgcore
           /tmp/kmpkgcore/kmpkgctl bootstrap --disable-metrics
-          echo "KMPKG_HOME=/tmp/kmpkgcore" >> $GITHUB_ENV
-          echo "KMPKG_CMAKE=/tmp/kmpkgcore/scripts/buildsystems/kmpkg.cmake" >> $GITHUB_ENV
-          echo "KMPKG_FORCE_SYSTEM_BINARIES=1" >> $GITHUB_ENV
+          echo "KMPKG_HOME=/tmp/kmpkgcore" >> "$GITHUB_ENV"
+          echo "KMPKG_CMAKE=/tmp/kmpkgcore/scripts/buildsystems/kmpkg.cmake" >> "$GITHUB_ENV"
+          echo "KMPKG_FORCE_SYSTEM_BINARIES=1" >> "$GITHUB_ENV"
       - name: Configure
         run: ${{ inputs.config-command }}
       - name: Build
@@ -1634,6 +1558,8 @@ jobs:
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
           SRC_DIR: ${{ inputs.benchmark-artifact-path }}
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
           if [ ! -d "$SRC_DIR" ]; then
@@ -1683,7 +1609,6 @@ jobs:
           done
           echo "Failed to publish after retries"
           exit 1
-
       - name: Gather kmpkg logs
         if: failure()
         run: |
@@ -1706,6 +1631,7 @@ jobs:
             build/Testing/Temporary/
             build/kmpkg-logs/
           if-no-files-found: ignore
+
 
   std20-debian12-amd64:
     if: ${{ inputs.enable-std20-debian12-amd64 }}
@@ -1731,16 +1657,6 @@ jobs:
                   echo "  $tool: NOT FOUND"
               fi
           done
-          if [ "$(uname)" = "Darwin" ]; then
-              echo "  sw_vers: $(sw_vers -productVersion 2>/dev/null || echo unknown)"
-              for tool in xcodebuild autoconf automake libtool pkg-config; do
-                  if command -v $tool &>/dev/null; then
-                      echo "  $tool: $(command -v $tool)  ($($tool --version 2>&1 | head -1))"
-                  else
-                      echo "  $tool: NOT FOUND"
-                  fi
-              done
-          fi
           for cc in gcc g++ clang clang++ cc c++; do
               if command -v $cc &>/dev/null; then
                   echo "  $($cc --version 2>&1 | head -1)"
@@ -1758,9 +1674,9 @@ jobs:
         run: |
           git clone --depth 1 https://github.com/kumose/kmpkgcore.git /tmp/kmpkgcore
           /tmp/kmpkgcore/kmpkgctl bootstrap --disable-metrics
-          echo "KMPKG_HOME=/tmp/kmpkgcore" >> $GITHUB_ENV
-          echo "KMPKG_CMAKE=/tmp/kmpkgcore/scripts/buildsystems/kmpkg.cmake" >> $GITHUB_ENV
-          echo "KMPKG_FORCE_SYSTEM_BINARIES=1" >> $GITHUB_ENV
+          echo "KMPKG_HOME=/tmp/kmpkgcore" >> "$GITHUB_ENV"
+          echo "KMPKG_CMAKE=/tmp/kmpkgcore/scripts/buildsystems/kmpkg.cmake" >> "$GITHUB_ENV"
+          echo "KMPKG_FORCE_SYSTEM_BINARIES=1" >> "$GITHUB_ENV"
       - name: Configure
         run: ${{ inputs.config-command }}
       - name: Build
@@ -1787,6 +1703,8 @@ jobs:
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
           SRC_DIR: ${{ inputs.benchmark-artifact-path }}
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
           if [ ! -d "$SRC_DIR" ]; then
@@ -1836,7 +1754,6 @@ jobs:
           done
           echo "Failed to publish after retries"
           exit 1
-
       - name: Gather kmpkg logs
         if: failure()
         run: |
@@ -1859,6 +1776,7 @@ jobs:
             build/Testing/Temporary/
             build/kmpkg-logs/
           if-no-files-found: ignore
+
 
   std20-debian12-arm64:
     if: ${{ inputs.enable-std20-debian12-arm64 }}
@@ -1884,16 +1802,6 @@ jobs:
                   echo "  $tool: NOT FOUND"
               fi
           done
-          if [ "$(uname)" = "Darwin" ]; then
-              echo "  sw_vers: $(sw_vers -productVersion 2>/dev/null || echo unknown)"
-              for tool in xcodebuild autoconf automake libtool pkg-config; do
-                  if command -v $tool &>/dev/null; then
-                      echo "  $tool: $(command -v $tool)  ($($tool --version 2>&1 | head -1))"
-                  else
-                      echo "  $tool: NOT FOUND"
-                  fi
-              done
-          fi
           for cc in gcc g++ clang clang++ cc c++; do
               if command -v $cc &>/dev/null; then
                   echo "  $($cc --version 2>&1 | head -1)"
@@ -1911,9 +1819,9 @@ jobs:
         run: |
           git clone --depth 1 https://github.com/kumose/kmpkgcore.git /tmp/kmpkgcore
           /tmp/kmpkgcore/kmpkgctl bootstrap --disable-metrics
-          echo "KMPKG_HOME=/tmp/kmpkgcore" >> $GITHUB_ENV
-          echo "KMPKG_CMAKE=/tmp/kmpkgcore/scripts/buildsystems/kmpkg.cmake" >> $GITHUB_ENV
-          echo "KMPKG_FORCE_SYSTEM_BINARIES=1" >> $GITHUB_ENV
+          echo "KMPKG_HOME=/tmp/kmpkgcore" >> "$GITHUB_ENV"
+          echo "KMPKG_CMAKE=/tmp/kmpkgcore/scripts/buildsystems/kmpkg.cmake" >> "$GITHUB_ENV"
+          echo "KMPKG_FORCE_SYSTEM_BINARIES=1" >> "$GITHUB_ENV"
       - name: Configure
         run: ${{ inputs.config-command }}
       - name: Build
@@ -1940,6 +1848,8 @@ jobs:
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
           SRC_DIR: ${{ inputs.benchmark-artifact-path }}
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
           if [ ! -d "$SRC_DIR" ]; then
@@ -1989,7 +1899,6 @@ jobs:
           done
           echo "Failed to publish after retries"
           exit 1
-
       - name: Gather kmpkg logs
         if: failure()
         run: |
@@ -2012,6 +1921,7 @@ jobs:
             build/Testing/Temporary/
             build/kmpkg-logs/
           if-no-files-found: ignore
+
 
   std20-alpine319-amd64:
     if: ${{ inputs.enable-std20-alpine319-amd64 }}
@@ -2037,16 +1947,6 @@ jobs:
                   echo "  $tool: NOT FOUND"
               fi
           done
-          if [ "$(uname)" = "Darwin" ]; then
-              echo "  sw_vers: $(sw_vers -productVersion 2>/dev/null || echo unknown)"
-              for tool in xcodebuild autoconf automake libtool pkg-config; do
-                  if command -v $tool &>/dev/null; then
-                      echo "  $tool: $(command -v $tool)  ($($tool --version 2>&1 | head -1))"
-                  else
-                      echo "  $tool: NOT FOUND"
-                  fi
-              done
-          fi
           for cc in gcc g++ clang clang++ cc c++; do
               if command -v $cc &>/dev/null; then
                   echo "  $($cc --version 2>&1 | head -1)"
@@ -2063,9 +1963,9 @@ jobs:
         run: |
           git clone --depth 1 https://github.com/kumose/kmpkgcore.git /tmp/kmpkgcore
           /tmp/kmpkgcore/kmpkgctl bootstrap --disable-metrics
-          echo "KMPKG_HOME=/tmp/kmpkgcore" >> $GITHUB_ENV
-          echo "KMPKG_CMAKE=/tmp/kmpkgcore/scripts/buildsystems/kmpkg.cmake" >> $GITHUB_ENV
-          echo "KMPKG_FORCE_SYSTEM_BINARIES=1" >> $GITHUB_ENV
+          echo "KMPKG_HOME=/tmp/kmpkgcore" >> "$GITHUB_ENV"
+          echo "KMPKG_CMAKE=/tmp/kmpkgcore/scripts/buildsystems/kmpkg.cmake" >> "$GITHUB_ENV"
+          echo "KMPKG_FORCE_SYSTEM_BINARIES=1" >> "$GITHUB_ENV"
       - name: Configure
         run: ${{ inputs.config-command }}
       - name: Build
@@ -2092,6 +1992,8 @@ jobs:
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
           SRC_DIR: ${{ inputs.benchmark-artifact-path }}
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
           if [ ! -d "$SRC_DIR" ]; then
@@ -2141,7 +2043,6 @@ jobs:
           done
           echo "Failed to publish after retries"
           exit 1
-
       - name: Gather kmpkg logs
         if: failure()
         run: |
@@ -2165,72 +2066,162 @@ jobs:
             build/kmpkg-logs/
           if-no-files-found: ignore
 
+
   std20-alpine319-arm64:
     if: ${{ inputs.enable-std20-alpine319-arm64 }}
     runs-on: ubuntu-24.04-arm
-    container: ghcr.io/koomx/kumo-std20-alpine319-arm64:latest
     steps:
       - uses: actions/checkout@v4
       - name: Dump environment
+        shell: bash
         run: |
-          echo "=== Environment Dump ==="
-          if [ -f /etc/os-release ]; then
-              . /etc/os-release
-              echo "OS: $NAME $VERSION ($(uname -m))"
-          elif [ "$(uname)" = "Darwin" ]; then
-              echo "OS: macOS $(sw_vers -productVersion 2>/dev/null || echo unknown) ($(uname -m))"
-          else
-              echo "OS: $(uname -a 2>/dev/null || echo unknown)"
-          fi
-          for tool in cmake ninja make git python3 curl tar gzip; do
-              if command -v $tool &>/dev/null; then
-                  echo "  $tool: $(command -v $tool)  ($($tool --version 2>&1 | head -1))"
-              else
-                  echo "  $tool: NOT FOUND"
-              fi
-          done
-          if [ "$(uname)" = "Darwin" ]; then
-              echo "  sw_vers: $(sw_vers -productVersion 2>/dev/null || echo unknown)"
-              for tool in xcodebuild autoconf automake libtool pkg-config; do
-                  if command -v $tool &>/dev/null; then
-                      echo "  $tool: $(command -v $tool)  ($($tool --version 2>&1 | head -1))"
-                  else
-                      echo "  $tool: NOT FOUND"
-                  fi
-              done
-          fi
-          for cc in gcc g++ clang clang++ cc c++; do
-              if command -v $cc &>/dev/null; then
-                  echo "  $($cc --version 2>&1 | head -1)"
-                  break
-              fi
-          done
-          echo "=== End ==="
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
+            -v "$RUNNER_TEMP:$RUNNER_TEMP" \
+            -v "$GITHUB_ENV:$GITHUB_ENV" \
+            -v "$GITHUB_PATH:$GITHUB_PATH" \
+            -e GITHUB_ENV -e GITHUB_PATH -e RUNNER_TEMP -e GITHUB_WORKSPACE -e GITHUB_JOB \
+            -e VCPKG_ROOT -e VCPKG_CMAKE -e VCPKG_DEFAULT_BINARY_CACHE -e VCPKG_FORCE_SYSTEM_BINARIES \
+            -e KMPKG_HOME -e KMPKG_CMAKE -e KMPKG_FORCE_SYSTEM_BINARIES \
+            -w "$GITHUB_WORKSPACE" \
+            ghcr.io/koomx/kumo-std20-alpine319-arm64:latest \
+            sh -lc "$(cat <<'EOS'
+echo "=== Environment Dump ==="
+if [ -f /etc/os-release ]; then . /etc/os-release; echo "OS: $NAME $VERSION ($(uname -m))"; fi
+for tool in cmake ninja make git python3 curl tar gzip; do
+  if command -v $tool >/dev/null 2>&1; then echo "  $tool: $(command -v $tool)"; else echo "  $tool: NOT FOUND"; fi
+done
+echo "=== End ==="
+EOS
+)"
       - name: Install deps
+        shell: bash
         run: |
-          if [ -n "${{ inputs.deps-alpine }}" ]; then
-            apk add --no-cache ${{ inputs.deps-alpine }}
-          fi
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
+            -v "$RUNNER_TEMP:$RUNNER_TEMP" \
+            -v "$GITHUB_ENV:$GITHUB_ENV" \
+            -v "$GITHUB_PATH:$GITHUB_PATH" \
+            -e GITHUB_ENV -e GITHUB_PATH -e RUNNER_TEMP -e GITHUB_WORKSPACE -e GITHUB_JOB \
+            -e VCPKG_ROOT -e VCPKG_CMAKE -e VCPKG_DEFAULT_BINARY_CACHE -e VCPKG_FORCE_SYSTEM_BINARIES \
+            -e KMPKG_HOME -e KMPKG_CMAKE -e KMPKG_FORCE_SYSTEM_BINARIES \
+            -w "$GITHUB_WORKSPACE" \
+            ghcr.io/koomx/kumo-std20-alpine319-arm64:latest \
+            sh -lc "$(cat <<'EOS'
+if [ -n "${{ inputs.deps-alpine }}" ]; then
+  apk add --no-cache ${{ inputs.deps-alpine }}
+fi
+EOS
+)"
       - name: Bootstrap kmpkg
+        shell: bash
         run: |
-          git clone --depth 1 https://github.com/kumose/kmpkgcore.git /tmp/kmpkgcore
-          /tmp/kmpkgcore/kmpkgctl bootstrap --disable-metrics
-          echo "KMPKG_HOME=/tmp/kmpkgcore" >> $GITHUB_ENV
-          echo "KMPKG_CMAKE=/tmp/kmpkgcore/scripts/buildsystems/kmpkg.cmake" >> $GITHUB_ENV
-          echo "KMPKG_FORCE_SYSTEM_BINARIES=1" >> $GITHUB_ENV
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
+            -v "$RUNNER_TEMP:$RUNNER_TEMP" \
+            -v "$GITHUB_ENV:$GITHUB_ENV" \
+            -v "$GITHUB_PATH:$GITHUB_PATH" \
+            -e GITHUB_ENV -e GITHUB_PATH -e RUNNER_TEMP -e GITHUB_WORKSPACE -e GITHUB_JOB \
+            -e VCPKG_ROOT -e VCPKG_CMAKE -e VCPKG_DEFAULT_BINARY_CACHE -e VCPKG_FORCE_SYSTEM_BINARIES \
+            -e KMPKG_HOME -e KMPKG_CMAKE -e KMPKG_FORCE_SYSTEM_BINARIES \
+            -w "$GITHUB_WORKSPACE" \
+            ghcr.io/koomx/kumo-std20-alpine319-arm64:latest \
+            sh -lc "$(cat <<'EOS'
+git clone --depth 1 https://github.com/kumose/kmpkgcore.git /tmp/kmpkgcore
+/tmp/kmpkgcore/kmpkgctl bootstrap --disable-metrics
+echo "KMPKG_HOME=/tmp/kmpkgcore" >> "$GITHUB_ENV"
+echo "KMPKG_CMAKE=/tmp/kmpkgcore/scripts/buildsystems/kmpkg.cmake" >> "$GITHUB_ENV"
+echo "KMPKG_FORCE_SYSTEM_BINARIES=1" >> "$GITHUB_ENV"
+EOS
+)"
       - name: Configure
-        run: ${{ inputs.config-command }}
+        shell: bash
+        run: |
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
+            -v "$RUNNER_TEMP:$RUNNER_TEMP" \
+            -v "$GITHUB_ENV:$GITHUB_ENV" \
+            -v "$GITHUB_PATH:$GITHUB_PATH" \
+            -e GITHUB_ENV -e GITHUB_PATH -e RUNNER_TEMP -e GITHUB_WORKSPACE -e GITHUB_JOB \
+            -e VCPKG_ROOT -e VCPKG_CMAKE -e VCPKG_DEFAULT_BINARY_CACHE -e VCPKG_FORCE_SYSTEM_BINARIES \
+            -e KMPKG_HOME -e KMPKG_CMAKE -e KMPKG_FORCE_SYSTEM_BINARIES \
+            -w "$GITHUB_WORKSPACE" \
+            ghcr.io/koomx/kumo-std20-alpine319-arm64:latest \
+            sh -lc "$(cat <<'EOS'
+${{ inputs.config-command }}
+EOS
+)"
       - name: Build
-        run: ${{ inputs.build-command }}
+        shell: bash
+        run: |
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
+            -v "$RUNNER_TEMP:$RUNNER_TEMP" \
+            -v "$GITHUB_ENV:$GITHUB_ENV" \
+            -v "$GITHUB_PATH:$GITHUB_PATH" \
+            -e GITHUB_ENV -e GITHUB_PATH -e RUNNER_TEMP -e GITHUB_WORKSPACE -e GITHUB_JOB \
+            -e VCPKG_ROOT -e VCPKG_CMAKE -e VCPKG_DEFAULT_BINARY_CACHE -e VCPKG_FORCE_SYSTEM_BINARIES \
+            -e KMPKG_HOME -e KMPKG_CMAKE -e KMPKG_FORCE_SYSTEM_BINARIES \
+            -w "$GITHUB_WORKSPACE" \
+            ghcr.io/koomx/kumo-std20-alpine319-arm64:latest \
+            sh -lc "$(cat <<'EOS'
+${{ inputs.build-command }}
+EOS
+)"
       - name: Test
         if: ${{ inputs.test-command != '' }}
-        run: ${{ inputs.test-command }}
+        shell: bash
+        run: |
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
+            -v "$RUNNER_TEMP:$RUNNER_TEMP" \
+            -v "$GITHUB_ENV:$GITHUB_ENV" \
+            -v "$GITHUB_PATH:$GITHUB_PATH" \
+            -e GITHUB_ENV -e GITHUB_PATH -e RUNNER_TEMP -e GITHUB_WORKSPACE -e GITHUB_JOB \
+            -e VCPKG_ROOT -e VCPKG_CMAKE -e VCPKG_DEFAULT_BINARY_CACHE -e VCPKG_FORCE_SYSTEM_BINARIES \
+            -e KMPKG_HOME -e KMPKG_CMAKE -e KMPKG_FORCE_SYSTEM_BINARIES \
+            -w "$GITHUB_WORKSPACE" \
+            ghcr.io/koomx/kumo-std20-alpine319-arm64:latest \
+            sh -lc "$(cat <<'EOS'
+${{ inputs.test-command }}
+EOS
+)"
       - name: Benchmark
         if: ${{ inputs.benchmark-command != '' }}
-        run: ${{ inputs.benchmark-command }}
+        shell: bash
+        run: |
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
+            -v "$RUNNER_TEMP:$RUNNER_TEMP" \
+            -v "$GITHUB_ENV:$GITHUB_ENV" \
+            -v "$GITHUB_PATH:$GITHUB_PATH" \
+            -e GITHUB_ENV -e GITHUB_PATH -e RUNNER_TEMP -e GITHUB_WORKSPACE -e GITHUB_JOB \
+            -e VCPKG_ROOT -e VCPKG_CMAKE -e VCPKG_DEFAULT_BINARY_CACHE -e VCPKG_FORCE_SYSTEM_BINARIES \
+            -e KMPKG_HOME -e KMPKG_CMAKE -e KMPKG_FORCE_SYSTEM_BINARIES \
+            -w "$GITHUB_WORKSPACE" \
+            ghcr.io/koomx/kumo-std20-alpine319-arm64:latest \
+            sh -lc "$(cat <<'EOS'
+${{ inputs.benchmark-command }}
+EOS
+)"
       - name: Plot
         if: ${{ inputs.plot-command != '' }}
-        run: ${{ inputs.plot-command }}
+        shell: bash
+        run: |
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
+            -v "$RUNNER_TEMP:$RUNNER_TEMP" \
+            -v "$GITHUB_ENV:$GITHUB_ENV" \
+            -v "$GITHUB_PATH:$GITHUB_PATH" \
+            -e GITHUB_ENV -e GITHUB_PATH -e RUNNER_TEMP -e GITHUB_WORKSPACE -e GITHUB_JOB \
+            -e VCPKG_ROOT -e VCPKG_CMAKE -e VCPKG_DEFAULT_BINARY_CACHE -e VCPKG_FORCE_SYSTEM_BINARIES \
+            -e KMPKG_HOME -e KMPKG_CMAKE -e KMPKG_FORCE_SYSTEM_BINARIES \
+            -w "$GITHUB_WORKSPACE" \
+            ghcr.io/koomx/kumo-std20-alpine319-arm64:latest \
+            sh -lc "$(cat <<'EOS'
+${{ inputs.plot-command }}
+EOS
+)"
       - name: Upload benchmark results
         if: ${{ (inputs.benchmark-command != '' || inputs.plot-command != '') && !cancelled() }}
         uses: actions/upload-artifact@v4
@@ -2244,6 +2235,8 @@ jobs:
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
           SRC_DIR: ${{ inputs.benchmark-artifact-path }}
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
           if [ ! -d "$SRC_DIR" ]; then
@@ -2293,18 +2286,31 @@ jobs:
           done
           echo "Failed to publish after retries"
           exit 1
-
-      - name: Gather kmpkg logs
+      - name: Gather logs
         if: failure()
+        shell: bash
         run: |
-          mkdir -p build/kmpkg-logs
-          if [ -d /tmp/kmpkgcore/buildtrees ]; then
-            find /tmp/kmpkgcore/buildtrees -name "*.log" | while IFS= read -r f; do
-              rel="${f#/tmp/kmpkgcore/}"
-              mkdir -p "build/kmpkg-logs/$(dirname "$rel")"
-              cp "$f" "build/kmpkg-logs/$rel"
-            done
-          fi
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
+            -v "$RUNNER_TEMP:$RUNNER_TEMP" \
+            -v "$GITHUB_ENV:$GITHUB_ENV" \
+            -v "$GITHUB_PATH:$GITHUB_PATH" \
+            -e GITHUB_ENV -e GITHUB_PATH -e RUNNER_TEMP -e GITHUB_WORKSPACE -e GITHUB_JOB \
+            -e VCPKG_ROOT -e VCPKG_CMAKE -e VCPKG_DEFAULT_BINARY_CACHE -e VCPKG_FORCE_SYSTEM_BINARIES \
+            -e KMPKG_HOME -e KMPKG_CMAKE -e KMPKG_FORCE_SYSTEM_BINARIES \
+            -w "$GITHUB_WORKSPACE" \
+            ghcr.io/koomx/kumo-std20-alpine319-arm64:latest \
+            sh -lc "$(cat <<'EOS'
+mkdir -p build/kmpkg-logs
+if [ -d /tmp/kmpkgcore/buildtrees ]; then
+  find /tmp/kmpkgcore/buildtrees -name "*.log" | while IFS= read -r f; do
+    rel="${f#/tmp/kmpkgcore/}"
+    mkdir -p "build/kmpkg-logs/$(dirname "$rel")"
+    cp "$f" "build/kmpkg-logs/$rel"
+  done
+fi
+EOS
+)"
       - name: Upload logs on failure
         if: failure()
         uses: actions/upload-artifact@v4
@@ -2341,16 +2347,6 @@ jobs:
                   echo "  $tool: NOT FOUND"
               fi
           done
-          if [ "$(uname)" = "Darwin" ]; then
-              echo "  sw_vers: $(sw_vers -productVersion 2>/dev/null || echo unknown)"
-              for tool in xcodebuild autoconf automake libtool pkg-config; do
-                  if command -v $tool &>/dev/null; then
-                      echo "  $tool: $(command -v $tool)  ($($tool --version 2>&1 | head -1))"
-                  else
-                      echo "  $tool: NOT FOUND"
-                  fi
-              done
-          fi
           for cc in gcc g++ clang clang++ cc c++; do
               if command -v $cc &>/dev/null; then
                   echo "  $($cc --version 2>&1 | head -1)"
@@ -2367,9 +2363,9 @@ jobs:
         run: |
           git clone --depth 1 https://github.com/kumose/kmpkgcore.git /tmp/kmpkgcore
           /tmp/kmpkgcore/kmpkgctl bootstrap --disable-metrics
-          echo "KMPKG_HOME=/tmp/kmpkgcore" >> $GITHUB_ENV
-          echo "KMPKG_CMAKE=/tmp/kmpkgcore/scripts/buildsystems/kmpkg.cmake" >> $GITHUB_ENV
-          echo "KMPKG_FORCE_SYSTEM_BINARIES=1" >> $GITHUB_ENV
+          echo "KMPKG_HOME=/tmp/kmpkgcore" >> "$GITHUB_ENV"
+          echo "KMPKG_CMAKE=/tmp/kmpkgcore/scripts/buildsystems/kmpkg.cmake" >> "$GITHUB_ENV"
+          echo "KMPKG_FORCE_SYSTEM_BINARIES=1" >> "$GITHUB_ENV"
       - name: Configure
         run: ${{ inputs.config-command }}
       - name: Build
@@ -2396,6 +2392,8 @@ jobs:
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
           SRC_DIR: ${{ inputs.benchmark-artifact-path }}
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
           if [ ! -d "$SRC_DIR" ]; then
@@ -2445,7 +2443,6 @@ jobs:
           done
           echo "Failed to publish after retries"
           exit 1
-
       - name: Gather kmpkg logs
         if: failure()
         run: |
@@ -2469,72 +2466,162 @@ jobs:
             build/kmpkg-logs/
           if-no-files-found: ignore
 
+
   std20-alpine320-arm64:
     if: ${{ inputs.enable-std20-alpine320-arm64 }}
     runs-on: ubuntu-24.04-arm
-    container: ghcr.io/koomx/kumo-std20-alpine320-arm64:latest
     steps:
       - uses: actions/checkout@v4
       - name: Dump environment
+        shell: bash
         run: |
-          echo "=== Environment Dump ==="
-          if [ -f /etc/os-release ]; then
-              . /etc/os-release
-              echo "OS: $NAME $VERSION ($(uname -m))"
-          elif [ "$(uname)" = "Darwin" ]; then
-              echo "OS: macOS $(sw_vers -productVersion 2>/dev/null || echo unknown) ($(uname -m))"
-          else
-              echo "OS: $(uname -a 2>/dev/null || echo unknown)"
-          fi
-          for tool in cmake ninja make git python3 curl tar gzip; do
-              if command -v $tool &>/dev/null; then
-                  echo "  $tool: $(command -v $tool)  ($($tool --version 2>&1 | head -1))"
-              else
-                  echo "  $tool: NOT FOUND"
-              fi
-          done
-          if [ "$(uname)" = "Darwin" ]; then
-              echo "  sw_vers: $(sw_vers -productVersion 2>/dev/null || echo unknown)"
-              for tool in xcodebuild autoconf automake libtool pkg-config; do
-                  if command -v $tool &>/dev/null; then
-                      echo "  $tool: $(command -v $tool)  ($($tool --version 2>&1 | head -1))"
-                  else
-                      echo "  $tool: NOT FOUND"
-                  fi
-              done
-          fi
-          for cc in gcc g++ clang clang++ cc c++; do
-              if command -v $cc &>/dev/null; then
-                  echo "  $($cc --version 2>&1 | head -1)"
-                  break
-              fi
-          done
-          echo "=== End ==="
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
+            -v "$RUNNER_TEMP:$RUNNER_TEMP" \
+            -v "$GITHUB_ENV:$GITHUB_ENV" \
+            -v "$GITHUB_PATH:$GITHUB_PATH" \
+            -e GITHUB_ENV -e GITHUB_PATH -e RUNNER_TEMP -e GITHUB_WORKSPACE -e GITHUB_JOB \
+            -e VCPKG_ROOT -e VCPKG_CMAKE -e VCPKG_DEFAULT_BINARY_CACHE -e VCPKG_FORCE_SYSTEM_BINARIES \
+            -e KMPKG_HOME -e KMPKG_CMAKE -e KMPKG_FORCE_SYSTEM_BINARIES \
+            -w "$GITHUB_WORKSPACE" \
+            ghcr.io/koomx/kumo-std20-alpine320-arm64:latest \
+            sh -lc "$(cat <<'EOS'
+echo "=== Environment Dump ==="
+if [ -f /etc/os-release ]; then . /etc/os-release; echo "OS: $NAME $VERSION ($(uname -m))"; fi
+for tool in cmake ninja make git python3 curl tar gzip; do
+  if command -v $tool >/dev/null 2>&1; then echo "  $tool: $(command -v $tool)"; else echo "  $tool: NOT FOUND"; fi
+done
+echo "=== End ==="
+EOS
+)"
       - name: Install deps
+        shell: bash
         run: |
-          if [ -n "${{ inputs.deps-alpine }}" ]; then
-            apk add --no-cache ${{ inputs.deps-alpine }}
-          fi
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
+            -v "$RUNNER_TEMP:$RUNNER_TEMP" \
+            -v "$GITHUB_ENV:$GITHUB_ENV" \
+            -v "$GITHUB_PATH:$GITHUB_PATH" \
+            -e GITHUB_ENV -e GITHUB_PATH -e RUNNER_TEMP -e GITHUB_WORKSPACE -e GITHUB_JOB \
+            -e VCPKG_ROOT -e VCPKG_CMAKE -e VCPKG_DEFAULT_BINARY_CACHE -e VCPKG_FORCE_SYSTEM_BINARIES \
+            -e KMPKG_HOME -e KMPKG_CMAKE -e KMPKG_FORCE_SYSTEM_BINARIES \
+            -w "$GITHUB_WORKSPACE" \
+            ghcr.io/koomx/kumo-std20-alpine320-arm64:latest \
+            sh -lc "$(cat <<'EOS'
+if [ -n "${{ inputs.deps-alpine }}" ]; then
+  apk add --no-cache ${{ inputs.deps-alpine }}
+fi
+EOS
+)"
       - name: Bootstrap kmpkg
+        shell: bash
         run: |
-          git clone --depth 1 https://github.com/kumose/kmpkgcore.git /tmp/kmpkgcore
-          /tmp/kmpkgcore/kmpkgctl bootstrap --disable-metrics
-          echo "KMPKG_HOME=/tmp/kmpkgcore" >> $GITHUB_ENV
-          echo "KMPKG_CMAKE=/tmp/kmpkgcore/scripts/buildsystems/kmpkg.cmake" >> $GITHUB_ENV
-          echo "KMPKG_FORCE_SYSTEM_BINARIES=1" >> $GITHUB_ENV
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
+            -v "$RUNNER_TEMP:$RUNNER_TEMP" \
+            -v "$GITHUB_ENV:$GITHUB_ENV" \
+            -v "$GITHUB_PATH:$GITHUB_PATH" \
+            -e GITHUB_ENV -e GITHUB_PATH -e RUNNER_TEMP -e GITHUB_WORKSPACE -e GITHUB_JOB \
+            -e VCPKG_ROOT -e VCPKG_CMAKE -e VCPKG_DEFAULT_BINARY_CACHE -e VCPKG_FORCE_SYSTEM_BINARIES \
+            -e KMPKG_HOME -e KMPKG_CMAKE -e KMPKG_FORCE_SYSTEM_BINARIES \
+            -w "$GITHUB_WORKSPACE" \
+            ghcr.io/koomx/kumo-std20-alpine320-arm64:latest \
+            sh -lc "$(cat <<'EOS'
+git clone --depth 1 https://github.com/kumose/kmpkgcore.git /tmp/kmpkgcore
+/tmp/kmpkgcore/kmpkgctl bootstrap --disable-metrics
+echo "KMPKG_HOME=/tmp/kmpkgcore" >> "$GITHUB_ENV"
+echo "KMPKG_CMAKE=/tmp/kmpkgcore/scripts/buildsystems/kmpkg.cmake" >> "$GITHUB_ENV"
+echo "KMPKG_FORCE_SYSTEM_BINARIES=1" >> "$GITHUB_ENV"
+EOS
+)"
       - name: Configure
-        run: ${{ inputs.config-command }}
+        shell: bash
+        run: |
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
+            -v "$RUNNER_TEMP:$RUNNER_TEMP" \
+            -v "$GITHUB_ENV:$GITHUB_ENV" \
+            -v "$GITHUB_PATH:$GITHUB_PATH" \
+            -e GITHUB_ENV -e GITHUB_PATH -e RUNNER_TEMP -e GITHUB_WORKSPACE -e GITHUB_JOB \
+            -e VCPKG_ROOT -e VCPKG_CMAKE -e VCPKG_DEFAULT_BINARY_CACHE -e VCPKG_FORCE_SYSTEM_BINARIES \
+            -e KMPKG_HOME -e KMPKG_CMAKE -e KMPKG_FORCE_SYSTEM_BINARIES \
+            -w "$GITHUB_WORKSPACE" \
+            ghcr.io/koomx/kumo-std20-alpine320-arm64:latest \
+            sh -lc "$(cat <<'EOS'
+${{ inputs.config-command }}
+EOS
+)"
       - name: Build
-        run: ${{ inputs.build-command }}
+        shell: bash
+        run: |
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
+            -v "$RUNNER_TEMP:$RUNNER_TEMP" \
+            -v "$GITHUB_ENV:$GITHUB_ENV" \
+            -v "$GITHUB_PATH:$GITHUB_PATH" \
+            -e GITHUB_ENV -e GITHUB_PATH -e RUNNER_TEMP -e GITHUB_WORKSPACE -e GITHUB_JOB \
+            -e VCPKG_ROOT -e VCPKG_CMAKE -e VCPKG_DEFAULT_BINARY_CACHE -e VCPKG_FORCE_SYSTEM_BINARIES \
+            -e KMPKG_HOME -e KMPKG_CMAKE -e KMPKG_FORCE_SYSTEM_BINARIES \
+            -w "$GITHUB_WORKSPACE" \
+            ghcr.io/koomx/kumo-std20-alpine320-arm64:latest \
+            sh -lc "$(cat <<'EOS'
+${{ inputs.build-command }}
+EOS
+)"
       - name: Test
         if: ${{ inputs.test-command != '' }}
-        run: ${{ inputs.test-command }}
+        shell: bash
+        run: |
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
+            -v "$RUNNER_TEMP:$RUNNER_TEMP" \
+            -v "$GITHUB_ENV:$GITHUB_ENV" \
+            -v "$GITHUB_PATH:$GITHUB_PATH" \
+            -e GITHUB_ENV -e GITHUB_PATH -e RUNNER_TEMP -e GITHUB_WORKSPACE -e GITHUB_JOB \
+            -e VCPKG_ROOT -e VCPKG_CMAKE -e VCPKG_DEFAULT_BINARY_CACHE -e VCPKG_FORCE_SYSTEM_BINARIES \
+            -e KMPKG_HOME -e KMPKG_CMAKE -e KMPKG_FORCE_SYSTEM_BINARIES \
+            -w "$GITHUB_WORKSPACE" \
+            ghcr.io/koomx/kumo-std20-alpine320-arm64:latest \
+            sh -lc "$(cat <<'EOS'
+${{ inputs.test-command }}
+EOS
+)"
       - name: Benchmark
         if: ${{ inputs.benchmark-command != '' }}
-        run: ${{ inputs.benchmark-command }}
+        shell: bash
+        run: |
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
+            -v "$RUNNER_TEMP:$RUNNER_TEMP" \
+            -v "$GITHUB_ENV:$GITHUB_ENV" \
+            -v "$GITHUB_PATH:$GITHUB_PATH" \
+            -e GITHUB_ENV -e GITHUB_PATH -e RUNNER_TEMP -e GITHUB_WORKSPACE -e GITHUB_JOB \
+            -e VCPKG_ROOT -e VCPKG_CMAKE -e VCPKG_DEFAULT_BINARY_CACHE -e VCPKG_FORCE_SYSTEM_BINARIES \
+            -e KMPKG_HOME -e KMPKG_CMAKE -e KMPKG_FORCE_SYSTEM_BINARIES \
+            -w "$GITHUB_WORKSPACE" \
+            ghcr.io/koomx/kumo-std20-alpine320-arm64:latest \
+            sh -lc "$(cat <<'EOS'
+${{ inputs.benchmark-command }}
+EOS
+)"
       - name: Plot
         if: ${{ inputs.plot-command != '' }}
-        run: ${{ inputs.plot-command }}
+        shell: bash
+        run: |
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
+            -v "$RUNNER_TEMP:$RUNNER_TEMP" \
+            -v "$GITHUB_ENV:$GITHUB_ENV" \
+            -v "$GITHUB_PATH:$GITHUB_PATH" \
+            -e GITHUB_ENV -e GITHUB_PATH -e RUNNER_TEMP -e GITHUB_WORKSPACE -e GITHUB_JOB \
+            -e VCPKG_ROOT -e VCPKG_CMAKE -e VCPKG_DEFAULT_BINARY_CACHE -e VCPKG_FORCE_SYSTEM_BINARIES \
+            -e KMPKG_HOME -e KMPKG_CMAKE -e KMPKG_FORCE_SYSTEM_BINARIES \
+            -w "$GITHUB_WORKSPACE" \
+            ghcr.io/koomx/kumo-std20-alpine320-arm64:latest \
+            sh -lc "$(cat <<'EOS'
+${{ inputs.plot-command }}
+EOS
+)"
       - name: Upload benchmark results
         if: ${{ (inputs.benchmark-command != '' || inputs.plot-command != '') && !cancelled() }}
         uses: actions/upload-artifact@v4
@@ -2548,6 +2635,8 @@ jobs:
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
           SRC_DIR: ${{ inputs.benchmark-artifact-path }}
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
           if [ ! -d "$SRC_DIR" ]; then
@@ -2597,18 +2686,31 @@ jobs:
           done
           echo "Failed to publish after retries"
           exit 1
-
-      - name: Gather kmpkg logs
+      - name: Gather logs
         if: failure()
+        shell: bash
         run: |
-          mkdir -p build/kmpkg-logs
-          if [ -d /tmp/kmpkgcore/buildtrees ]; then
-            find /tmp/kmpkgcore/buildtrees -name "*.log" | while IFS= read -r f; do
-              rel="${f#/tmp/kmpkgcore/}"
-              mkdir -p "build/kmpkg-logs/$(dirname "$rel")"
-              cp "$f" "build/kmpkg-logs/$rel"
-            done
-          fi
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
+            -v "$RUNNER_TEMP:$RUNNER_TEMP" \
+            -v "$GITHUB_ENV:$GITHUB_ENV" \
+            -v "$GITHUB_PATH:$GITHUB_PATH" \
+            -e GITHUB_ENV -e GITHUB_PATH -e RUNNER_TEMP -e GITHUB_WORKSPACE -e GITHUB_JOB \
+            -e VCPKG_ROOT -e VCPKG_CMAKE -e VCPKG_DEFAULT_BINARY_CACHE -e VCPKG_FORCE_SYSTEM_BINARIES \
+            -e KMPKG_HOME -e KMPKG_CMAKE -e KMPKG_FORCE_SYSTEM_BINARIES \
+            -w "$GITHUB_WORKSPACE" \
+            ghcr.io/koomx/kumo-std20-alpine320-arm64:latest \
+            sh -lc "$(cat <<'EOS'
+mkdir -p build/kmpkg-logs
+if [ -d /tmp/kmpkgcore/buildtrees ]; then
+  find /tmp/kmpkgcore/buildtrees -name "*.log" | while IFS= read -r f; do
+    rel="${f#/tmp/kmpkgcore/}"
+    mkdir -p "build/kmpkg-logs/$(dirname "$rel")"
+    cp "$f" "build/kmpkg-logs/$rel"
+  done
+fi
+EOS
+)"
       - name: Upload logs on failure
         if: failure()
         uses: actions/upload-artifact@v4
@@ -2645,16 +2747,6 @@ jobs:
                   echo "  $tool: NOT FOUND"
               fi
           done
-          if [ "$(uname)" = "Darwin" ]; then
-              echo "  sw_vers: $(sw_vers -productVersion 2>/dev/null || echo unknown)"
-              for tool in xcodebuild autoconf automake libtool pkg-config; do
-                  if command -v $tool &>/dev/null; then
-                      echo "  $tool: $(command -v $tool)  ($($tool --version 2>&1 | head -1))"
-                  else
-                      echo "  $tool: NOT FOUND"
-                  fi
-              done
-          fi
           for cc in gcc g++ clang clang++ cc c++; do
               if command -v $cc &>/dev/null; then
                   echo "  $($cc --version 2>&1 | head -1)"
@@ -2671,9 +2763,9 @@ jobs:
         run: |
           git clone --depth 1 https://github.com/kumose/kmpkgcore.git /tmp/kmpkgcore
           /tmp/kmpkgcore/kmpkgctl bootstrap --disable-metrics
-          echo "KMPKG_HOME=/tmp/kmpkgcore" >> $GITHUB_ENV
-          echo "KMPKG_CMAKE=/tmp/kmpkgcore/scripts/buildsystems/kmpkg.cmake" >> $GITHUB_ENV
-          echo "KMPKG_FORCE_SYSTEM_BINARIES=1" >> $GITHUB_ENV
+          echo "KMPKG_HOME=/tmp/kmpkgcore" >> "$GITHUB_ENV"
+          echo "KMPKG_CMAKE=/tmp/kmpkgcore/scripts/buildsystems/kmpkg.cmake" >> "$GITHUB_ENV"
+          echo "KMPKG_FORCE_SYSTEM_BINARIES=1" >> "$GITHUB_ENV"
       - name: Configure
         run: ${{ inputs.config-command }}
       - name: Build
@@ -2700,6 +2792,8 @@ jobs:
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
           SRC_DIR: ${{ inputs.benchmark-artifact-path }}
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
           if [ ! -d "$SRC_DIR" ]; then
@@ -2749,7 +2843,6 @@ jobs:
           done
           echo "Failed to publish after retries"
           exit 1
-
       - name: Gather kmpkg logs
         if: failure()
         run: |
@@ -2772,6 +2865,7 @@ jobs:
             build/Testing/Temporary/
             build/kmpkg-logs/
           if-no-files-found: ignore
+
 
   std20-centos9-arm64:
     if: ${{ inputs.enable-std20-centos9-arm64 }}
@@ -2797,16 +2891,6 @@ jobs:
                   echo "  $tool: NOT FOUND"
               fi
           done
-          if [ "$(uname)" = "Darwin" ]; then
-              echo "  sw_vers: $(sw_vers -productVersion 2>/dev/null || echo unknown)"
-              for tool in xcodebuild autoconf automake libtool pkg-config; do
-                  if command -v $tool &>/dev/null; then
-                      echo "  $tool: $(command -v $tool)  ($($tool --version 2>&1 | head -1))"
-                  else
-                      echo "  $tool: NOT FOUND"
-                  fi
-              done
-          fi
           for cc in gcc g++ clang clang++ cc c++; do
               if command -v $cc &>/dev/null; then
                   echo "  $($cc --version 2>&1 | head -1)"
@@ -2823,9 +2907,9 @@ jobs:
         run: |
           git clone --depth 1 https://github.com/kumose/kmpkgcore.git /tmp/kmpkgcore
           /tmp/kmpkgcore/kmpkgctl bootstrap --disable-metrics
-          echo "KMPKG_HOME=/tmp/kmpkgcore" >> $GITHUB_ENV
-          echo "KMPKG_CMAKE=/tmp/kmpkgcore/scripts/buildsystems/kmpkg.cmake" >> $GITHUB_ENV
-          echo "KMPKG_FORCE_SYSTEM_BINARIES=1" >> $GITHUB_ENV
+          echo "KMPKG_HOME=/tmp/kmpkgcore" >> "$GITHUB_ENV"
+          echo "KMPKG_CMAKE=/tmp/kmpkgcore/scripts/buildsystems/kmpkg.cmake" >> "$GITHUB_ENV"
+          echo "KMPKG_FORCE_SYSTEM_BINARIES=1" >> "$GITHUB_ENV"
       - name: Configure
         run: ${{ inputs.config-command }}
       - name: Build
@@ -2852,6 +2936,8 @@ jobs:
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
           SRC_DIR: ${{ inputs.benchmark-artifact-path }}
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
           if [ ! -d "$SRC_DIR" ]; then
@@ -2901,7 +2987,6 @@ jobs:
           done
           echo "Failed to publish after retries"
           exit 1
-
       - name: Gather kmpkg logs
         if: failure()
         run: |
@@ -2924,6 +3009,7 @@ jobs:
             build/Testing/Temporary/
             build/kmpkg-logs/
           if-no-files-found: ignore
+
 
   macos-arm64:
     if: ${{ inputs.enable-macos-arm64 }}
@@ -2948,16 +3034,6 @@ jobs:
                   echo "  $tool: NOT FOUND"
               fi
           done
-          if [ "$(uname)" = "Darwin" ]; then
-              echo "  sw_vers: $(sw_vers -productVersion 2>/dev/null || echo unknown)"
-              for tool in xcodebuild autoconf automake libtool pkg-config; do
-                  if command -v $tool &>/dev/null; then
-                      echo "  $tool: $(command -v $tool)  ($($tool --version 2>&1 | head -1))"
-                  else
-                      echo "  $tool: NOT FOUND"
-                  fi
-              done
-          fi
           for cc in gcc g++ clang clang++ cc c++; do
               if command -v $cc &>/dev/null; then
                   echo "  $($cc --version 2>&1 | head -1)"
@@ -3003,6 +3079,8 @@ jobs:
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
           SRC_DIR: ${{ inputs.benchmark-artifact-path }}
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
           if [ ! -d "$SRC_DIR" ]; then
@@ -3052,7 +3130,6 @@ jobs:
           done
           echo "Failed to publish after retries"
           exit 1
-
       - name: Gather kmpkg logs
         if: failure()
         run: |
@@ -3099,16 +3176,6 @@ jobs:
                   echo "  $tool: NOT FOUND"
               fi
           done
-          if [ "$(uname)" = "Darwin" ]; then
-              echo "  sw_vers: $(sw_vers -productVersion 2>/dev/null || echo unknown)"
-              for tool in xcodebuild autoconf automake libtool pkg-config; do
-                  if command -v $tool &>/dev/null; then
-                      echo "  $tool: $(command -v $tool)  ($($tool --version 2>&1 | head -1))"
-                  else
-                      echo "  $tool: NOT FOUND"
-                  fi
-              done
-          fi
           for cc in gcc g++ clang clang++ cc c++; do
               if command -v $cc &>/dev/null; then
                   echo "  $($cc --version 2>&1 | head -1)"
@@ -3154,6 +3221,8 @@ jobs:
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
           SRC_DIR: ${{ inputs.benchmark-artifact-path }}
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
           if [ ! -d "$SRC_DIR" ]; then
@@ -3203,7 +3272,6 @@ jobs:
           done
           echo "Failed to publish after retries"
           exit 1
-
       - name: Gather kmpkg logs
         if: failure()
         run: |
@@ -3252,22 +3320,6 @@ jobs:
                   Write-Host "  ${tool}: NOT FOUND"
               }
           }
-          $choco = Get-Command choco -ErrorAction SilentlyContinue
-          if ($choco) {
-              $ver = & choco --version 2>&1 | Select-Object -First 1
-              Write-Host "  choco: $($choco.Source)  ($ver)"
-          } else {
-              Write-Host "  choco: NOT FOUND"
-          }
-          $compilers = @('cl', 'clang', 'g++')
-          foreach ($cc in $compilers) {
-              $path = Get-Command $cc -ErrorAction SilentlyContinue
-              if ($path) {
-                  $ver = & $cc --version 2>&1 | Select-Object -First 1
-                  Write-Host "  ${cc}: $($path.Source)  ($ver)"
-                  break
-              }
-          }
           Write-Host "=== End ==="
       - name: Install deps
         run: |
@@ -3275,7 +3327,6 @@ jobs:
       - name: Bootstrap kmpkg
         env:
           TEMP_DIR: ${{ runner.temp }}
-          KMPKG_FORCE_SYSTEM_BINARIES: 1
         run: |
           $kmpkgRoot = Join-Path $env:TEMP_DIR "kmpkgcore"
           git clone https://github.com/kumose/kmpkgcore.git "$kmpkgRoot"
@@ -3315,6 +3366,8 @@ jobs:
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
           SRC_DIR: ${{ inputs.benchmark-artifact-path }}
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
           if [ ! -d "$SRC_DIR" ]; then
@@ -3364,7 +3417,6 @@ jobs:
           done
           echo "Failed to publish after retries"
           exit 1
-
       - name: Gather kmpkg logs
         if: failure()
         run: |
@@ -3418,22 +3470,6 @@ jobs:
                   Write-Host "  ${tool}: NOT FOUND"
               }
           }
-          $choco = Get-Command choco -ErrorAction SilentlyContinue
-          if ($choco) {
-              $ver = & choco --version 2>&1 | Select-Object -First 1
-              Write-Host "  choco: $($choco.Source)  ($ver)"
-          } else {
-              Write-Host "  choco: NOT FOUND"
-          }
-          $compilers = @('cl', 'clang', 'g++')
-          foreach ($cc in $compilers) {
-              $path = Get-Command $cc -ErrorAction SilentlyContinue
-              if ($path) {
-                  $ver = & $cc --version 2>&1 | Select-Object -First 1
-                  Write-Host "  ${cc}: $($path.Source)  ($ver)"
-                  break
-              }
-          }
           Write-Host "=== End ==="
       - name: Install deps
         run: |
@@ -3441,7 +3477,6 @@ jobs:
       - name: Bootstrap kmpkg
         env:
           TEMP_DIR: ${{ runner.temp }}
-          KMPKG_FORCE_SYSTEM_BINARIES: 1
         run: |
           $kmpkgRoot = Join-Path $env:TEMP_DIR "kmpkgcore"
           git clone https://github.com/kumose/kmpkgcore.git "$kmpkgRoot"
@@ -3481,6 +3516,8 @@ jobs:
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
           SRC_DIR: ${{ inputs.benchmark-artifact-path }}
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
           if [ ! -d "$SRC_DIR" ]; then
@@ -3530,7 +3567,6 @@ jobs:
           done
           echo "Failed to publish after retries"
           exit 1
-
       - name: Gather kmpkg logs
         if: failure()
         run: |
