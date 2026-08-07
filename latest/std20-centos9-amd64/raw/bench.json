@@ -4,19 +4,19 @@
   "samples": [
     {
       "name": "memcpy",
-      "value": 125.52
+      "value": 381.42
     },
     {
       "name": "ostream",
-      "value": 317.43
+      "value": 217.61
     },
     {
       "name": "printf",
-      "value": 377.73
+      "value": 227.37
     },
     {
       "name": "snprintf",
-      "value": 472.15
+      "value": 346.51
     }
   ]
 }
