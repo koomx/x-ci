@@ -1,0 +1,22 @@
+{
+  "title": "x-ci benchmark demo",
+  "unit": "ns",
+  "samples": [
+    {
+      "name": "memcpy",
+      "value": 440.33
+    },
+    {
+      "name": "ostream",
+      "value": 264.39
+    },
+    {
+      "name": "printf",
+      "value": 357.12
+    },
+    {
+      "name": "snprintf",
+      "value": 241.75
+    }
+  ]
+}
