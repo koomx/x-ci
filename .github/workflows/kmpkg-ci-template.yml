@@ -255,6 +255,7 @@ jobs:
           if-no-files-found: ignore
       - name: Publish benchmark results
         if: ${{ inputs.benchmark-publish-branch != '' && inputs.benchmark-publish-job == 'std17-ubuntu20-amd64' && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+        shell: bash
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
           SRC_DIR: ${{ inputs.benchmark-artifact-path }}
@@ -392,6 +393,7 @@ jobs:
           if-no-files-found: ignore
       - name: Publish benchmark results
         if: ${{ inputs.benchmark-publish-branch != '' && inputs.benchmark-publish-job == 'std17-ubuntu20-arm64' && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+        shell: bash
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
           SRC_DIR: ${{ inputs.benchmark-artifact-path }}
@@ -529,6 +531,7 @@ jobs:
           if-no-files-found: ignore
       - name: Publish benchmark results
         if: ${{ inputs.benchmark-publish-branch != '' && inputs.benchmark-publish-job == 'std17-debian11-amd64' && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+        shell: bash
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
           SRC_DIR: ${{ inputs.benchmark-artifact-path }}
@@ -666,6 +669,7 @@ jobs:
           if-no-files-found: ignore
       - name: Publish benchmark results
         if: ${{ inputs.benchmark-publish-branch != '' && inputs.benchmark-publish-job == 'std17-debian11-arm64' && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+        shell: bash
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
           SRC_DIR: ${{ inputs.benchmark-artifact-path }}
@@ -802,6 +806,7 @@ jobs:
           if-no-files-found: ignore
       - name: Publish benchmark results
         if: ${{ inputs.benchmark-publish-branch != '' && inputs.benchmark-publish-job == 'std17-centos7-amd64' && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+        shell: bash
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
           SRC_DIR: ${{ inputs.benchmark-artifact-path }}
@@ -938,6 +943,7 @@ jobs:
           if-no-files-found: ignore
       - name: Publish benchmark results
         if: ${{ inputs.benchmark-publish-branch != '' && inputs.benchmark-publish-job == 'std17-centos7-arm64' && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+        shell: bash
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
           SRC_DIR: ${{ inputs.benchmark-artifact-path }}
@@ -1075,6 +1081,7 @@ jobs:
           if-no-files-found: ignore
       - name: Publish benchmark results
         if: ${{ inputs.benchmark-publish-branch != '' && inputs.benchmark-publish-job == 'std20-ubuntu22-amd64' && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+        shell: bash
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
           SRC_DIR: ${{ inputs.benchmark-artifact-path }}
@@ -1212,6 +1219,7 @@ jobs:
           if-no-files-found: ignore
       - name: Publish benchmark results
         if: ${{ inputs.benchmark-publish-branch != '' && inputs.benchmark-publish-job == 'std20-ubuntu22-arm64' && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+        shell: bash
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
           SRC_DIR: ${{ inputs.benchmark-artifact-path }}
@@ -1349,6 +1357,7 @@ jobs:
           if-no-files-found: ignore
       - name: Publish benchmark results
         if: ${{ inputs.benchmark-publish-branch != '' && inputs.benchmark-publish-job == 'std20-ubuntu24-amd64' && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+        shell: bash
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
           SRC_DIR: ${{ inputs.benchmark-artifact-path }}
@@ -1486,6 +1495,7 @@ jobs:
           if-no-files-found: ignore
       - name: Publish benchmark results
         if: ${{ inputs.benchmark-publish-branch != '' && inputs.benchmark-publish-job == 'std20-ubuntu24-arm64' && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+        shell: bash
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
           SRC_DIR: ${{ inputs.benchmark-artifact-path }}
@@ -1623,6 +1633,7 @@ jobs:
           if-no-files-found: ignore
       - name: Publish benchmark results
         if: ${{ inputs.benchmark-publish-branch != '' && inputs.benchmark-publish-job == 'std20-debian12-amd64' && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+        shell: bash
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
           SRC_DIR: ${{ inputs.benchmark-artifact-path }}
@@ -1760,6 +1771,7 @@ jobs:
           if-no-files-found: ignore
       - name: Publish benchmark results
         if: ${{ inputs.benchmark-publish-branch != '' && inputs.benchmark-publish-job == 'std20-debian12-arm64' && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+        shell: bash
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
           SRC_DIR: ${{ inputs.benchmark-artifact-path }}
@@ -1896,6 +1908,7 @@ jobs:
           if-no-files-found: ignore
       - name: Publish benchmark results
         if: ${{ inputs.benchmark-publish-branch != '' && inputs.benchmark-publish-job == 'std20-alpine319-amd64' && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+        shell: bash
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
           SRC_DIR: ${{ inputs.benchmark-artifact-path }}
@@ -2032,6 +2045,7 @@ jobs:
           if-no-files-found: ignore
       - name: Publish benchmark results
         if: ${{ inputs.benchmark-publish-branch != '' && inputs.benchmark-publish-job == 'std20-alpine319-arm64' && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+        shell: bash
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
           SRC_DIR: ${{ inputs.benchmark-artifact-path }}
@@ -2168,6 +2182,7 @@ jobs:
           if-no-files-found: ignore
       - name: Publish benchmark results
         if: ${{ inputs.benchmark-publish-branch != '' && inputs.benchmark-publish-job == 'std20-alpine320-amd64' && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+        shell: bash
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
           SRC_DIR: ${{ inputs.benchmark-artifact-path }}
@@ -2304,6 +2319,7 @@ jobs:
           if-no-files-found: ignore
       - name: Publish benchmark results
         if: ${{ inputs.benchmark-publish-branch != '' && inputs.benchmark-publish-job == 'std20-alpine320-arm64' && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+        shell: bash
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
           SRC_DIR: ${{ inputs.benchmark-artifact-path }}
@@ -2440,6 +2456,7 @@ jobs:
           if-no-files-found: ignore
       - name: Publish benchmark results
         if: ${{ inputs.benchmark-publish-branch != '' && inputs.benchmark-publish-job == 'std20-centos9-amd64' && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+        shell: bash
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
           SRC_DIR: ${{ inputs.benchmark-artifact-path }}
@@ -2576,6 +2593,7 @@ jobs:
           if-no-files-found: ignore
       - name: Publish benchmark results
         if: ${{ inputs.benchmark-publish-branch != '' && inputs.benchmark-publish-job == 'std20-centos9-arm64' && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+        shell: bash
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
           SRC_DIR: ${{ inputs.benchmark-artifact-path }}
@@ -2711,6 +2729,7 @@ jobs:
           if-no-files-found: ignore
       - name: Publish benchmark results
         if: ${{ inputs.benchmark-publish-branch != '' && inputs.benchmark-publish-job == 'macos-arm64' && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+        shell: bash
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
           SRC_DIR: ${{ inputs.benchmark-artifact-path }}
@@ -2846,6 +2865,7 @@ jobs:
           if-no-files-found: ignore
       - name: Publish benchmark results
         if: ${{ inputs.benchmark-publish-branch != '' && inputs.benchmark-publish-job == 'macos-x86' && success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+        shell: bash
         env:
           PUBLISH_BRANCH: ${{ inputs.benchmark-publish-branch }}
           SRC_DIR: ${{ inputs.benchmark-artifact-path }}
